@@ -1,9 +1,12 @@
 #!/usr/bin/env node
 /**
  * Bootstrap swarm GitHub issues from SWARM_ROADMAP.md phases
- * Usage: node scripts/swarm-bootstrap.mjs
+ * Usage: npm run swarm:bootstrap
  */
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
+import { writeFileSync, unlinkSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 
 const REPO = 'tuannx/Adaptive-Generative-UI-Library';
 
@@ -15,12 +18,12 @@ const TASKS = [
 Make packages installable via npm with proper exports and peer deps.
 
 ## Acceptance
-- [ ] \`main\`, \`module\`, \`types\`, \`exports\` fields validated
+- [ ] main, module, types, exports fields validated
 - [ ] Changesets or release workflow
 - [ ] README install instructions work
 
 ## Ship-Validate
-Ship: npm publish config. Validate: fresh \`npm create vite\` app imports @agul/react.`,
+Ship: npm publish config. Validate: fresh Vite app imports @agul/react.`,
   },
   {
     phase: 'phase:2-agent-api',
@@ -43,7 +46,7 @@ Ship: MCP tool. Validate: one agent session builds UI from Petstore spec.`,
 Allow agents to pass plain JSON Schema without full OpenAPI wrapper.
 
 ## Acceptance
-- [ ] \`AGULRenderer\` accepts \`jsonSchema\` prop
+- [ ] AGULRenderer accepts jsonSchema prop
 - [ ] Form/list generation from schema alone
 - [ ] Tests for schema-only path`,
   },
@@ -65,7 +68,7 @@ Support OpenAPI query params for page, limit, search.
 Configurable auth for generated UI API calls.
 
 ## Acceptance
-- [ ] \`AGULRenderer\` \`getAuthHeaders\` or \`token\` prop
+- [ ] AGULRenderer token or getAuthHeaders prop
 - [ ] Axios interceptor in shared module
 - [ ] Demo with mock token`,
   },
@@ -76,7 +79,7 @@ Configurable auth for generated UI API calls.
 Agents can register custom components for specific schema types.
 
 ## Acceptance
-- [ ] \`AGULRenderer\` \`plugins\` prop
+- [ ] AGULRenderer plugins prop
 - [ ] FormView uses plugin registry
 - [ ] Example: image upload field plugin`,
   },
@@ -93,8 +96,8 @@ Regression safety for CRUD flows.
   },
 ];
 
-function gh(cmd) {
-  return execSync(`gh ${cmd}`, { encoding: 'utf8' }).trim();
+function gh(args) {
+  return execFileSync('gh', args, { encoding: 'utf8' }).trim();
 }
 
 function ensureLabels() {
@@ -108,7 +111,7 @@ function ensureLabels() {
   ];
   for (const name of labels) {
     try {
-      gh(`label create "${name}" --repo ${REPO} --color EDEDED --force`);
+      gh(['label', 'create', name, '--repo', REPO, '--color', 'EDEDED', '--force']);
     } catch {
       // label exists
     }
@@ -116,8 +119,31 @@ function ensureLabels() {
 }
 
 function issueExists(title) {
-  const raw = gh(`issue list --repo ${REPO} --state all --json title --limit 200`);
+  const raw = gh(['issue', 'list', '--repo', REPO, '--state', 'all', '--json', 'title', '--limit', '200']);
   return JSON.parse(raw).some((i) => i.title === title);
+}
+
+function createIssue(task) {
+  const bodyPath = join(tmpdir(), `agul-issue-${Date.now()}.md`);
+  writeFileSync(bodyPath, task.body, 'utf8');
+  try {
+    gh([
+      'issue',
+      'create',
+      '--repo',
+      REPO,
+      '--title',
+      task.title,
+      '--body-file',
+      bodyPath,
+      '--label',
+      'swarm',
+      '--label',
+      task.phase,
+    ]);
+  } finally {
+    unlinkSync(bodyPath);
+  }
 }
 
 ensureLabels();
@@ -128,10 +154,7 @@ for (const task of TASKS) {
     console.log(`Skip (exists): ${task.title}`);
     continue;
   }
-  const body = task.body.replace(/"/g, '\\"');
-  gh(
-    `issue create --repo ${REPO} --title "${task.title}" --body "${body}" --label swarm --label ${task.phase}`,
-  );
+  createIssue(task);
   console.log(`Created: ${task.title}`);
   created++;
 }
