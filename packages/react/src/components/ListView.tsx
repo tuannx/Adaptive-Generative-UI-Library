@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import useSWR, { mutate } from 'swr';
 import axios from 'axios';
 import type { RouteConfig } from '@agul/core';
+import { routesShareResource, buildRouterPath, buildPathParamsFromRecord, buildApiUrl } from '@agul/core';
 
 interface ListViewProps {
   route: RouteConfig;
@@ -27,24 +28,26 @@ export const ListView: React.FC<ListViewProps> = ({ route, baseUrl, allRoutes })
   // Find related routes for this resource
   const detailRoute = allRoutes.find(r =>
     r.component === 'detail' &&
-    r.apiEndpoint.startsWith(route.apiEndpoint) &&
-    r.apiEndpoint !== route.apiEndpoint
+    routesShareResource(r.apiEndpoint, route.apiEndpoint)
   );
 
   const createRoute = allRoutes.find(r =>
     r.component === 'create' &&
-    r.apiEndpoint === route.apiEndpoint
+    routesShareResource(r.apiEndpoint, route.apiEndpoint) &&
+    !r.path.includes(':')
+  ) ?? allRoutes.find(r =>
+    r.component === 'create' &&
+    routesShareResource(r.apiEndpoint, route.apiEndpoint)
   );
 
   const editRoute = allRoutes.find(r =>
     r.component === 'edit' &&
-    r.apiEndpoint.startsWith(route.apiEndpoint)
+    routesShareResource(r.apiEndpoint, route.apiEndpoint)
   );
 
   const deleteEndpoint = allRoutes.find(r =>
     r.method === 'delete' &&
-    r.apiEndpoint.startsWith(route.apiEndpoint) &&
-    r.apiEndpoint !== route.apiEndpoint
+    routesShareResource(r.apiEndpoint, route.apiEndpoint)
   );
 
   const handleDelete = async (record: any) => {
@@ -54,17 +57,14 @@ export const ListView: React.FC<ListViewProps> = ({ route, baseUrl, allRoutes })
     }
 
     try {
-      // Extract ID field
-      const idField = getIdField(record);
-      const id = record[idField];
+      const pathParams = buildPathParamsFromRecord(deleteEndpoint.apiEndpoint, record);
 
-      if (!id) {
+      if (Object.keys(pathParams).length === 0) {
         message.error('Cannot determine record ID');
         return;
       }
 
-      // Build delete URL
-      const deleteUrl = `${baseUrl}${deleteEndpoint.apiEndpoint.replace(`{${idField}}`, id)}`;
+      const deleteUrl = buildApiUrl(baseUrl, deleteEndpoint.apiEndpoint, pathParams);
 
       await axios.delete(deleteUrl);
       message.success('Deleted successfully');
@@ -79,11 +79,8 @@ export const ListView: React.FC<ListViewProps> = ({ route, baseUrl, allRoutes })
   const handleView = (record: any) => {
     if (!detailRoute) return;
 
-    const idField = getIdField(record);
-    const id = record[idField];
-
-    if (id) {
-      const path = detailRoute.path.replace(`:${idField}`, id);
+    const path = buildRouterPath(detailRoute.path, record);
+    if (!path.includes(':')) {
       navigate(path);
     }
   };
@@ -91,12 +88,9 @@ export const ListView: React.FC<ListViewProps> = ({ route, baseUrl, allRoutes })
   const handleEdit = (record: any) => {
     if (!editRoute) return;
 
-    const idField = getIdField(record);
-    const id = record[idField];
-
-    if (id) {
-      const path = editRoute.path.replace(`:${idField}`, id);
-      navigate(path);
+    const path = buildRouterPath(editRoute.path, record);
+    if (!path.includes(':')) {
+      navigate(path, { state: { record } });
     }
   };
 
@@ -118,14 +112,16 @@ export const ListView: React.FC<ListViewProps> = ({ route, baseUrl, allRoutes })
 
     if (arrayData.length === 0) return [];
 
-    // Get keys from first item
+    // Get keys from first item — skip nested/heavy fields for table width
     const firstItem = arrayData[0];
-    const keys = Object.keys(firstItem);
+    const skipKeys = new Set(['photoUrls', 'tags', 'category']);
+    const keys = Object.keys(firstItem).filter((k) => !skipKeys.has(k));
 
-    const cols: any[] = keys.slice(0, 8).map(key => ({
+    const cols: any[] = keys.slice(0, 6).map(key => ({
       title: formatColumnName(key),
       dataIndex: key,
       key,
+      width: 140,
       ellipsis: true,
       render: (value: any) => formatValue(value)
     }));
@@ -135,8 +131,7 @@ export const ListView: React.FC<ListViewProps> = ({ route, baseUrl, allRoutes })
       title: 'Actions',
       key: 'actions',
       dataIndex: 'actions',
-      fixed: 'right' as const,
-      width: 180,
+      width: 220,
       render: (_: any, record: any) => (
         <Space size="small">
           {detailRoute && (
@@ -144,6 +139,7 @@ export const ListView: React.FC<ListViewProps> = ({ route, baseUrl, allRoutes })
               type="link"
               size="small"
               icon={<EyeOutlined />}
+              data-testid={`agul-action-view-${record.id ?? record.key}`}
               onClick={() => handleView(record)}
             >
               View
@@ -154,6 +150,7 @@ export const ListView: React.FC<ListViewProps> = ({ route, baseUrl, allRoutes })
               type="link"
               size="small"
               icon={<EditOutlined />}
+              data-testid={`agul-action-edit-${record.id ?? record.key}`}
               onClick={() => handleEdit(record)}
             >
               Edit
@@ -171,6 +168,7 @@ export const ListView: React.FC<ListViewProps> = ({ route, baseUrl, allRoutes })
                 size="small"
                 danger
                 icon={<DeleteOutlined />}
+                data-testid={`agul-action-delete-${record.id ?? record.key}`}
               >
                 Delete
               </Button>
@@ -234,26 +232,14 @@ export const ListView: React.FC<ListViewProps> = ({ route, baseUrl, allRoutes })
           showSizeChanger: true,
           showTotal: (total) => `Total ${total} items`
         }}
-        scroll={{ x: 'max-content' }}
+        scroll={{ x: 960 }}
+        tableLayout="fixed"
       />
     </Card>
   );
 };
 
 // Helper functions
-function getIdField(record: any): string {
-  const commonIdFields = ['id', '_id', 'uuid', 'ID', 'Id'];
-
-  for (const field of commonIdFields) {
-    if (field in record) {
-      return field;
-    }
-  }
-
-  // Use first field as fallback
-  return Object.keys(record)[0];
-}
-
 function formatColumnName(name: string): string {
   return name
     .replace(/([A-Z])/g, ' $1')

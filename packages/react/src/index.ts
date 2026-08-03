@@ -13,6 +13,8 @@ export {
   generateMenu,
   buildApiUrl,
   getCrudOperations,
+  getResourceRoot,
+  routesShareResource,
   resolveRef,
   getResponseSchema,
   getRequestSchema,

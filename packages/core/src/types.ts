@@ -83,7 +83,7 @@ export interface RouteConfig {
   operationId: string;
 }
 
-export type ComponentType = 'list' | 'detail' | 'form' | 'create' | 'edit';
+export type ComponentType = 'list' | 'detail' | 'form' | 'create' | 'edit' | 'delete';
 
 export interface MenuItem {
   key: string;

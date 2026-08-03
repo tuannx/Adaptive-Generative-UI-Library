@@ -18,10 +18,11 @@ import {
   Alert
 } from 'antd';
 import { SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons';
-import { useNavigate, useParams } from 'react-router-dom';
-import useSWR from 'swr';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import useSWR, { mutate } from 'swr';
 import axios from 'axios';
 import type { RouteConfig, SchemaObject } from '@agul/core';
+import { routesShareResource } from '@agul/core';
 
 interface FormViewProps {
   route: RouteConfig;
@@ -34,21 +35,23 @@ const fetcher = (url: string) => axios.get(url).then(res => res.data);
 
 export const FormView: React.FC<FormViewProps> = ({ route, baseUrl, allRoutes, schemas }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const params = useParams();
   const [form] = Form.useForm();
   const [loading, setLoading] = React.useState(false);
 
   const isEdit = route.component === 'edit';
+  const seedRecord = (location.state as { record?: Record<string, unknown> } | null)?.record;
 
-  // For edit mode, fetch existing data
+  // For edit mode, fetch existing data when route has path params
   const detailRoute = isEdit ? allRoutes.find(r =>
     r.component === 'detail' &&
-    r.apiEndpoint === route.apiEndpoint
+    routesShareResource(r.apiEndpoint, route.apiEndpoint)
   ) : null;
 
   let fetchUrl: string | null = null;
-  if (isEdit && detailRoute) {
-    fetchUrl = `${baseUrl}${route.apiEndpoint}`;
+  if (isEdit && detailRoute && Object.keys(params).length > 0) {
+    fetchUrl = `${baseUrl}${detailRoute.apiEndpoint}`;
     Object.entries(params).forEach(([key, value]) => {
       fetchUrl = fetchUrl!.replace(`{${key}}`, value || '');
     });
@@ -67,13 +70,21 @@ export const FormView: React.FC<FormViewProps> = ({ route, baseUrl, allRoutes, s
     }
   }, [existingData, form]);
 
+  useEffect(() => {
+    if (seedRecord) {
+      form.setFieldsValue(seedRecord);
+    }
+  }, [seedRecord, form]);
+
   const listRoute = allRoutes.find(r =>
     r.component === 'list' &&
-    route.apiEndpoint.startsWith(r.apiEndpoint)
+    routesShareResource(route.apiEndpoint, r.apiEndpoint)
   );
 
   const handleSubmit = async (values: any) => {
     setLoading(true);
+
+    const payload = isEdit && seedRecord ? { ...seedRecord, ...values } : values;
 
     try {
       // Build API URL
@@ -84,15 +95,16 @@ export const FormView: React.FC<FormViewProps> = ({ route, baseUrl, allRoutes, s
 
       // Send request
       if (isEdit) {
-        await axios.put(apiUrl, values);
+        await axios.put(apiUrl, payload);
         message.success('Updated successfully');
       } else {
-        await axios.post(apiUrl, values);
+        await axios.post(apiUrl, payload);
         message.success('Created successfully');
       }
 
       // Navigate back to list
       if (listRoute) {
+        await mutate(`${baseUrl}${listRoute.apiEndpoint}`);
         navigate(listRoute.path);
       } else {
         navigate(-1);
@@ -131,6 +143,7 @@ export const FormView: React.FC<FormViewProps> = ({ route, baseUrl, allRoutes, s
 
   return (
     <Card
+      data-testid="agul-form-view"
       title={
         <Space>
           <Button
@@ -165,6 +178,7 @@ export const FormView: React.FC<FormViewProps> = ({ route, baseUrl, allRoutes, s
                 htmlType="submit"
                 icon={<SaveOutlined />}
                 loading={loading}
+                data-testid="agul-form-submit"
               >
                 {isEdit ? 'Update' : 'Create'}
               </Button>

@@ -6,9 +6,10 @@ import React from 'react';
 import { Card, Descriptions, Button, Space, message, Popconfirm, Spin, Alert } from 'antd';
 import { EditOutlined, DeleteOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
-import useSWR from 'swr';
+import useSWR, { mutate } from 'swr';
 import axios from 'axios';
 import type { RouteConfig } from '@agul/core';
+import { routesShareResource } from '@agul/core';
 
 interface DetailViewProps {
   route: RouteConfig;
@@ -33,17 +34,17 @@ export const DetailView: React.FC<DetailViewProps> = ({ route, baseUrl, allRoute
   // Find related routes
   const editRoute = allRoutes.find(r =>
     r.component === 'edit' &&
-    r.apiEndpoint === route.apiEndpoint
+    routesShareResource(r.apiEndpoint, route.apiEndpoint)
   );
 
   const deleteEndpoint = allRoutes.find(r =>
     r.method === 'delete' &&
-    r.apiEndpoint === route.apiEndpoint
+    routesShareResource(r.apiEndpoint, route.apiEndpoint)
   );
 
   const listRoute = allRoutes.find(r =>
     r.component === 'list' &&
-    route.apiEndpoint.startsWith(r.apiEndpoint)
+    routesShareResource(route.apiEndpoint, r.apiEndpoint)
   );
 
   const handleEdit = () => {
@@ -66,6 +67,10 @@ export const DetailView: React.FC<DetailViewProps> = ({ route, baseUrl, allRoute
     try {
       await axios.delete(apiUrl);
       message.success('Deleted successfully');
+
+      if (listRoute) {
+        await mutate(`${baseUrl}${listRoute.apiEndpoint}`);
+      }
 
       // Navigate back to list
       if (listRoute) {
@@ -129,12 +134,14 @@ export const DetailView: React.FC<DetailViewProps> = ({ route, baseUrl, allRoute
 
   return (
     <Card
+      data-testid="agul-detail-view"
       title={
         <Space>
           <Button
             type="text"
             icon={<ArrowLeftOutlined />}
             onClick={handleBack}
+            data-testid="agul-detail-back"
           />
           {route.summary || 'Detail View'}
         </Space>

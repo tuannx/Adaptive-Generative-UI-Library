@@ -1,36 +1,9 @@
 import { test, expect } from '@playwright/test';
-
-const mockPets = [
-  { id: 1, name: 'Fluffy', status: 'available', category: { id: 1, name: 'Dogs' } },
-  { id: 2, name: 'Snowball', status: 'pending', category: { id: 2, name: 'Cats' } },
-];
+import { setupPetstoreMock, waitForAgulReady } from './helpers/petstore-mock.js';
 
 test.describe('AGUL Demo — Petstore UI', () => {
   test.beforeEach(async ({ page }) => {
-    await page.route('**/*', async (route) => {
-      const url = route.request().url();
-      if (!url.includes('petstore.swagger.io')) {
-        await route.continue();
-        return;
-      }
-      if (route.request().method() === 'GET' && /petstore\.swagger\.io.*\/pet/.test(url)) {
-        if (/\/pet\/\d+/.test(url)) {
-          await route.fulfill({
-            status: 200,
-            contentType: 'application/json',
-            body: JSON.stringify(mockPets[0]),
-          });
-          return;
-        }
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(mockPets),
-        });
-        return;
-      }
-      await route.continue();
-    });
+    await setupPetstoreMock(page);
   });
 
   test('loads demo and generates sidebar from OpenAPI spec', async ({ page }) => {
@@ -43,18 +16,14 @@ test.describe('AGUL Demo — Petstore UI', () => {
   });
 
   test('navigates to pet list and shows mocked data', async ({ page }) => {
-    await page.goto('/');
-
-    await expect(page.getByTestId('agul-loading')).toBeHidden({ timeout: 15_000 });
-    await expect(page.getByTestId('agul-list-view')).toBeVisible({ timeout: 10_000 });
+    await waitForAgulReady(page);
     await expect(page.getByRole('table')).toBeVisible();
-    await expect(page.getByText('Fluffy')).toBeVisible();
-    await expect(page.getByText('Snowball')).toBeVisible();
+    await expect(page.getByTestId('agul-list-table')).toContainText('Fluffy');
+    await expect(page.getByTestId('agul-list-table')).toContainText('Snowball');
   });
 
   test('resets to petstore via toolbar', async ({ page }) => {
     await page.goto('/');
-
     await expect(page.getByTestId('agul-loading')).toBeHidden({ timeout: 15_000 });
     await page.getByRole('button', { name: 'JSONPlaceholder' }).click();
     await page.getByRole('button', { name: 'Reset to Petstore' }).click();

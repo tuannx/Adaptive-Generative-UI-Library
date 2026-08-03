@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { parseOpenAPI, getResponseSchema, resolveRef } from './parser.js';
-import { generateRoutes, groupRoutesByTag, generateMenu } from './generator.js';
+import { generateRoutes, groupRoutesByTag, generateMenu, getResourceRoot, routesShareResource, buildRouterPath, buildPathParamsFromRecord } from './generator.js';
 
 const minimalOpenApi3 = {
   openapi: '3.0.0',
@@ -131,6 +131,25 @@ describe('generateRoutes', () => {
 
     expect(menu.length).toBeGreaterThan(0);
     expect(menu[0].children?.length).toBeGreaterThan(0);
+  });
+});
+
+describe('routesShareResource', () => {
+  it('groups pet endpoints under same resource', () => {
+    expect(routesShareResource('/pet/findByStatus', '/pet/{petId}')).toBe(true);
+    expect(routesShareResource('/pet', '/pet/{petId}')).toBe(true);
+    expect(routesShareResource('/store/order', '/pet/{petId}')).toBe(false);
+  });
+
+  it('extracts resource root', () => {
+    expect(getResourceRoot('/pet/findByStatus')).toBe('/pet');
+    expect(getResourceRoot('/pet/{petId}')).toBe('/pet');
+  });
+
+  it('maps record id to OpenAPI path params', () => {
+    const record = { id: 1, name: 'Fluffy' };
+    expect(buildRouterPath('/pet/:petId', record)).toBe('/pet/1');
+    expect(buildPathParamsFromRecord('/pet/{petId}', record)).toEqual({ petId: '1' });
   });
 });
 
