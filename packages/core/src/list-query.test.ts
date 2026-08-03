@@ -3,7 +3,6 @@ import {
   parseListQueryBindings,
   withFallbackPagination,
   buildListQueryString,
-  getDefaultListQueryState,
 } from './list-query.js';
 import type { ParameterObject } from './types.js';
 
