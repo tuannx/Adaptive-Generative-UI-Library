@@ -8,7 +8,7 @@ import { EyeOutlined, EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-de
 import { useNavigate } from 'react-router-dom';
 import useSWR, { mutate } from 'swr';
 import axios from 'axios';
-import type { RouteConfig } from '../core/types';
+import type { RouteConfig } from '@agul/core';
 
 interface ListViewProps {
   route: RouteConfig;

@@ -11,7 +11,7 @@ import {
   GithubOutlined
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
-import type { MenuItem } from '../core/types';
+import type { MenuItem } from '@agul/core';
 
 const { Header, Sider, Content } = Layout;
 const { Title, Text } = Typography;

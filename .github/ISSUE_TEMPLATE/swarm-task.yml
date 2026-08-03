@@ -1,0 +1,42 @@
+name: Swarm Task
+description: Work item for agent swarm (pick via npm run swarm:next)
+title: "[Swarm] "
+labels: ["swarm"]
+body:
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Phase
+      options:
+        - phase:0-infra
+        - phase:1-library
+        - phase:2-agent-api
+        - phase:3-features
+        - phase:4-production
+    validations:
+      required: true
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What should this task achieve?
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria
+      description: Checklist for done
+      value: |
+        - [ ] 
+        - [ ] npm run build passes
+        - [ ] npm run test passes
+    validations:
+      required: true
+  - type: textarea
+    id: ship-validate
+    attributes:
+      label: Ship-Validate Cycle
+      description: How will the next iter validate this ships?
+    validations:
+      required: false

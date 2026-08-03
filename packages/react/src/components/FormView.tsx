@@ -21,7 +21,7 @@ import { SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import useSWR from 'swr';
 import axios from 'axios';
-import type { RouteConfig, SchemaObject } from '../core/types';
+import type { RouteConfig, SchemaObject } from '@agul/core';
 
 interface FormViewProps {
   route: RouteConfig;
