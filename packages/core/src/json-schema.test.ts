@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { parseJsonSchema, wrapJsonSchemaAsOpenAPI } from './json-schema.js';
 import { generateRoutes } from './generator.js';
+import type { SchemaObject } from './types.js';
 
-const petSchema = {
+const petSchema: SchemaObject = {
   type: 'object',
   title: 'Pet',
   required: ['id', 'name'],
@@ -11,7 +12,7 @@ const petSchema = {
     name: { type: 'string' },
     status: { type: 'string', enum: ['available', 'pending'] },
   },
-} as const;
+};
 
 describe('wrapJsonSchemaAsOpenAPI', () => {
   it('creates CRUD paths for a resource', () => {
