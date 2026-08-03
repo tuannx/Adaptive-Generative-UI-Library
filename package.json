@@ -14,12 +14,17 @@
     "test": "turbo test",
     "typecheck": "turbo typecheck",
     "lint": "turbo typecheck",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "turbo build --filter=@agul/core --filter=@agul/react && changeset publish",
+    "verify-pack": "node scripts/verify-pack.mjs",
     "swarm:status": "node scripts/swarm-status.mjs",
     "swarm:next": "node scripts/swarm-next.mjs",
     "swarm:bootstrap": "node scripts/swarm-bootstrap.mjs",
-    "clean": "rm -rf packages/*/dist apps/demo/dist node_modules/.cache"
+    "clean": "rm -rf packages/*/dist apps/demo/dist apps/validate-consumer/dist node_modules/.cache"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.29.8",
     "@eslint/js": "^9.39.1",
     "@typescript-eslint/eslint-plugin": "^8.46.3",
     "@typescript-eslint/parser": "^8.46.3",

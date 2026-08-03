@@ -2,6 +2,7 @@
   "name": "@agul/react",
   "version": "0.1.0",
   "description": "React components and AGULRenderer for OpenAPI-driven dynamic UI",
+  "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -13,6 +14,24 @@
     }
   },
   "files": ["dist"],
+  "keywords": [
+    "react",
+    "openapi",
+    "swagger",
+    "ui",
+    "admin",
+    "crud",
+    "ant-design",
+    "agul"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tuannx/Adaptive-Generative-UI-Library.git",
+    "directory": "packages/react"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsup && tsc -p tsconfig.build.json",
     "dev": "tsup --watch",
