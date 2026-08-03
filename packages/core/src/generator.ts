@@ -111,7 +111,19 @@ function generateRoutesForEndpoint(
       break;
 
     case 'delete':
-      // DELETE handled in ListView/DetailView, no separate route
+      if (hasPathParam) {
+        routes.push({
+          path: routerPath,
+          component: 'delete',
+          apiEndpoint: path,
+          method,
+          summary,
+          description,
+          parameters,
+          tag: tags?.[0] || 'default',
+          operationId,
+        });
+      }
       break;
   }
 
@@ -206,6 +218,73 @@ export function extractPathParams(path: string): string[] {
   return Array.from(matches, m => m[1]);
 }
 
+const COMMON_ID_FIELDS = ['id', '_id', 'uuid', 'ID', 'Id'];
+
+/**
+ * Map an OpenAPI/React Router path param name to a field on a record object.
+ * e.g. petId on /pet/{petId} maps to record.id
+ */
+export function resolveRecordIdField(
+  record: Record<string, unknown>,
+  paramName: string,
+): string {
+  if (paramName in record) {
+    return paramName;
+  }
+
+  for (const field of COMMON_ID_FIELDS) {
+    if (field in record) {
+      return field;
+    }
+  }
+
+  return Object.keys(record)[0];
+}
+
+/**
+ * Substitute React Router path params from a data record.
+ */
+export function buildRouterPath(
+  routerPath: string,
+  record: Record<string, unknown>,
+): string {
+  let path = routerPath;
+
+  for (const paramName of extractPathParams(routerPath)) {
+    const field = resolveRecordIdField(record, paramName);
+    const value = record[field];
+
+    if (value !== null && value !== undefined) {
+      path = path.replace(`:${paramName}`, String(value));
+    }
+  }
+
+  return path;
+}
+
+/**
+ * Build OpenAPI path parameter values from a data record.
+ */
+export function buildPathParamsFromRecord(
+  apiEndpoint: string,
+  record: Record<string, unknown>,
+): Record<string, string> {
+  const params: Record<string, string> = {};
+  const matches = apiEndpoint.matchAll(/\{([^}]+)\}/g);
+
+  for (const match of matches) {
+    const paramName = match[1];
+    const field = resolveRecordIdField(record, paramName);
+    const value = record[field];
+
+    if (value !== null && value !== undefined) {
+      params[paramName] = String(value);
+    }
+  }
+
+  return params;
+}
+
 /**
  * Build API URL with path parameters
  */
@@ -227,6 +306,22 @@ export function buildApiUrl(
 }
 
 /**
+ * Extract resource root segment from an API path.
+ * /pet/findByStatus → /pet, /pet/{petId} → /pet
+ */
+export function getResourceRoot(apiEndpoint: string): string {
+  const segments = apiEndpoint.split('/').filter(Boolean);
+  return segments.length > 0 ? `/${segments[0]}` : '';
+}
+
+/**
+ * Whether two API paths belong to the same resource group.
+ */
+export function routesShareResource(apiEndpointA: string, apiEndpointB: string): boolean {
+  return getResourceRoot(apiEndpointA) === getResourceRoot(apiEndpointB);
+}
+
+/**
  * Get CRUD operations for a resource
  */
 export function getCrudOperations(
@@ -237,29 +332,38 @@ export function getCrudOperations(
   detail?: RouteConfig;
   create?: RouteConfig;
   edit?: RouteConfig;
-  delete?: ParsedEndpoint;
+  delete?: RouteConfig;
 } {
-  const operations: any = {};
+  const operations: {
+    list?: RouteConfig;
+    detail?: RouteConfig;
+    create?: RouteConfig;
+    edit?: RouteConfig;
+    delete?: RouteConfig;
+  } = {};
 
-  routes.forEach(route => {
-    const basePath = route.apiEndpoint.replace(/\{[^}]+\}/g, '').replace(/\/$/, '');
-    const targetPath = resourcePath.replace(/\{[^}]+\}/g, '').replace(/\/$/, '');
+  routes.forEach((route) => {
+    if (!routesShareResource(route.apiEndpoint, resourcePath)) {
+      return;
+    }
 
-    if (basePath === targetPath || route.apiEndpoint === resourcePath) {
-      switch (route.component) {
-        case 'list':
-          operations.list = route;
-          break;
-        case 'detail':
-          operations.detail = route;
-          break;
-        case 'create':
-          operations.create = route;
-          break;
-        case 'edit':
-          operations.edit = route;
-          break;
-      }
+    switch (route.component) {
+      case 'list':
+        operations.list = route;
+        break;
+      case 'detail':
+        operations.detail = route;
+        break;
+      case 'create':
+        operations.create = route;
+        break;
+      case 'edit':
+        operations.edit = route;
+        break;
+    }
+
+    if (route.method === 'delete') {
+      operations.delete = route;
     }
   });
 

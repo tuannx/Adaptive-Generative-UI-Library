@@ -156,9 +156,11 @@ export function AGULRenderer({
         <AppLayout menu={menu} apiTitle={parsedAPI.basePath} apiVersion="1.0">
           <Routes>
             <Route path="/" element={<Navigate to={defaultPath} replace />} />
-            {routes.map((route) => (
+            {routes
+              .filter((route) => route.component !== 'delete')
+              .map((route) => (
               <Route
-                key={route.path}
+                key={route.operationId}
                 path={route.path}
                 element={
                   route.component === 'list' ? (
