@@ -8,7 +8,7 @@ import { EditOutlined, DeleteOutlined, ArrowLeftOutlined } from '@ant-design/ico
 import { useNavigate, useParams } from 'react-router-dom';
 import useSWR from 'swr';
 import axios from 'axios';
-import type { RouteConfig } from '../core/types';
+import type { RouteConfig } from '@agul/core';
 
 interface DetailViewProps {
   route: RouteConfig;
