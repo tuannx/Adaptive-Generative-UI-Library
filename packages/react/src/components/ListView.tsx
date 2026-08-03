@@ -210,6 +210,7 @@ export const ListView: React.FC<ListViewProps> = ({ route, baseUrl, allRoutes })
 
   return (
     <Card
+      data-testid="agul-list-view"
       title={route.summary || formatPathName(route.path)}
       extra={
         createRoute && (
@@ -224,6 +225,7 @@ export const ListView: React.FC<ListViewProps> = ({ route, baseUrl, allRoutes })
       }
     >
       <Table
+        data-testid="agul-list-table"
         columns={columns}
         dataSource={tableData}
         loading={isLoading}

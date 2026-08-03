@@ -29,7 +29,7 @@ function App() {
 
   return (
     <div>
-      <div className="demo-toolbar">
+      <div className="demo-toolbar" data-testid="demo-toolbar">
         <Upload beforeUpload={handleUpload} accept=".json" showUploadList={false}>
           <Button icon={<UploadOutlined />}>Upload OpenAPI Spec</Button>
         </Upload>
