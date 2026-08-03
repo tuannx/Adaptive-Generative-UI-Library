@@ -12,6 +12,7 @@ Transform AGUL from OpenAPI demo into a **publishable library** that AI agents u
 packages/
   core/     @agul/core   — parser, generator, types (no React)
   react/    @agul/react  — AGULRenderer, ListView, DetailView, FormView
+  mcp/      @agul/mcp    — MCP server for agents
 apps/
   demo/     @agul/demo   — Vite demo app (dogfood target)
 ```
@@ -22,7 +23,8 @@ apps/
 npm install          # once
 npm run dev          # turbo: watch core + react + demo
 npm run build        # build all packages
-npm run test         # vitest in @agul/core
+npm run test         # vitest (@agul/core, @agul/mcp)
+npm run test:e2e     # Playwright demo + MCP validation
 npm run typecheck    # TS 7 strict across workspace
 npm run swarm:status # open GitHub issues by phase
 npm run swarm:next   # pick next unassigned swarm task
@@ -33,7 +35,7 @@ npm run swarm:next   # pick next unassigned swarm task
 1. **Pick task**: `npm run swarm:next` or `gh issue list --label swarm`
 2. **Branch**: `feat/issue-<number>-<short-slug>`
 3. **Implement**: smallest safe diff, match existing conventions
-4. **Verify**: `npm run build && npm run test && npm run typecheck`
+4. **Verify**: `npm run build && npm run test && npm run test:e2e && npm run typecheck`
 5. **PR**: `gh pr create` with `Closes #<number>` in body
 6. **Autopilot**: fix CI + review comments before merge
 
@@ -62,6 +64,33 @@ See `.planning/SWARM_ROADMAP.md` for full backlog.
 import { AGULRenderer, createAGULFromSpec } from '@agul/react';
 
 <AGULRenderer spec={openApiJson} baseUrl="https://api.example.com" />
+```
+
+## MCP Server (for Cursor/Claude agents)
+
+```bash
+# Add to MCP config (stdio):
+# { "command": "npx", "args": ["-y", "@agul/mcp"] }
+
+# Or from monorepo after build:
+node packages/mcp/dist/cli.js
+```
+
+**Tool:** `generate_ui_from_openapi`
+
+| Param | Type | Description |
+|-------|------|-------------|
+| `spec` | object | OpenAPI 3.0 / Swagger 2.0 JSON |
+| `baseUrl` | string? | Override API base URL |
+| `previewBaseUrl` | string? | Demo URL for preview link |
+
+Returns: routes, menu, React embed snippet, optional previewUrl.
+
+Programmatic (tests):
+
+```ts
+import { generateUIFromOpenAPI } from '@agul/mcp';
+const config = await generateUIFromOpenAPI(spec);
 ```
 
 ## Code Conventions

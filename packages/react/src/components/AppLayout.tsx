@@ -52,8 +52,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   }));
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    <Layout style={{ minHeight: '100vh' }} data-testid="agul-layout">
       <Sider
+        data-testid="agul-sidebar"
         trigger={null}
         collapsible
         collapsed={collapsed}

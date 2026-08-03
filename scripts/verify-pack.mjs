@@ -7,6 +7,7 @@ const root = resolve(import.meta.dirname, '..');
 const packages = [
   { dir: 'packages/core', name: '@agul/core' },
   { dir: 'packages/react', name: '@agul/react' },
+  { dir: 'packages/mcp', name: '@agul/mcp' },
 ];
 
 function run(cmd, cwd = root) {
@@ -14,7 +15,7 @@ function run(cmd, cwd = root) {
 }
 
 console.log('Building publishable packages...');
-run('npm run build --workspace=@agul/core --workspace=@agul/react');
+run('npm run build --workspace=@agul/core --workspace=@agul/react --workspace=@agul/mcp');
 
 const packDir = mkdtempSync(join(tmpdir(), 'agul-pack-verify-'));
 

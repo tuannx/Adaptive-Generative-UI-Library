@@ -1,0 +1,48 @@
+{
+  "name": "@agul/mcp",
+  "version": "0.1.0",
+  "description": "MCP server exposing AGUL OpenAPI-to-UI tools for AI agents",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "agul-mcp": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup && tsc -p tsconfig.build.json",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "start": "node dist/cli.js"
+  },
+  "dependencies": {
+    "@agul/core": "0.1.0",
+    "@modelcontextprotocol/sdk": "^1.25.3",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.0",
+    "tsup": "^8.5.0",
+    "typescript": "^7.0.2",
+    "vitest": "^3.2.4"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tuannx/Adaptive-Generative-UI-Library.git",
+    "directory": "packages/mcp"
+  },
+  "keywords": ["mcp", "openapi", "agent", "generative-ui", "agul"],
+  "publishConfig": {
+    "access": "public"
+  }
+}

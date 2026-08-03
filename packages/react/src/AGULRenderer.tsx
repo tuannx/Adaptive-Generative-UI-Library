@@ -124,7 +124,7 @@ export function AGULRenderer({
         }}
       >
         <Spin size="large" />
-        <div>Loading OpenAPI specification...</div>
+        <div data-testid="agul-loading">Loading OpenAPI specification...</div>
       </div>
     );
   }
