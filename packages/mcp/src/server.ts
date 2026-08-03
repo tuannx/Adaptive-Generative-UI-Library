@@ -1,7 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import { generateUIFromOpenAPI } from './generate-ui.js';
+import { generateUIFromOpenAPI, generateUIFromJsonSchema } from './generate-ui.js';
 
 const openApiSpecSchema = z.record(z.unknown());
 
@@ -24,6 +24,40 @@ export function createAGULMcpServer(): McpServer {
     },
     async ({ spec, baseUrl, previewBaseUrl }) => {
       const result = await generateUIFromOpenAPI(spec, { baseUrl, previewBaseUrl });
+
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: JSON.stringify(result, null, 2),
+          },
+        ],
+      };
+    },
+  );
+
+  server.tool(
+    'generate_ui_from_json_schema',
+    'Generate AGUL React admin UI configuration from a plain JSON Schema (no OpenAPI wrapper)',
+    {
+      schema: openApiSpecSchema.describe('JSON Schema object describing a resource'),
+      baseUrl: z.string().describe('API base URL for generated REST endpoints'),
+      resourcePath: z.string().optional().describe('REST resource path (e.g. /pets)'),
+      title: z.string().optional().describe('Resource title override'),
+      idParam: z.string().optional().describe('Path id parameter name (default: id)'),
+      previewBaseUrl: z
+        .string()
+        .optional()
+        .describe('Demo app URL for preview (e.g. http://localhost:5173)'),
+    },
+    async ({ schema, baseUrl, resourcePath, title, idParam, previewBaseUrl }) => {
+      const result = await generateUIFromJsonSchema(schema, {
+        baseUrl,
+        resourcePath,
+        title,
+        idParam,
+        previewBaseUrl,
+      });
 
       return {
         content: [

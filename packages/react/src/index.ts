@@ -1,4 +1,4 @@
-export { AGULRenderer, createAGULFromSpec } from './AGULRenderer.js';
+export { AGULRenderer, createAGULFromSpec, createAGULFromJsonSchema } from './AGULRenderer.js';
 export type { AGULRendererProps } from './AGULRenderer.js';
 
 export { AppLayout } from './components/AppLayout.js';
@@ -8,6 +8,8 @@ export { FormView } from './components/FormView.js';
 
 export {
   parseOpenAPI,
+  parseJsonSchema,
+  wrapJsonSchemaAsOpenAPI,
   generateRoutes,
   groupRoutesByTag,
   generateMenu,
@@ -28,4 +30,5 @@ export type {
   MenuItem,
   ComponentType,
   HttpMethod,
+  JsonSchemaInputOptions,
 } from '@agul/core';
