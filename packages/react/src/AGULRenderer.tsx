@@ -3,7 +3,7 @@
  * Renders a full CRUD admin UI from an OpenAPI specification
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ConfigProvider, Spin, Alert, message } from 'antd';
 import {
@@ -22,6 +22,8 @@ import { ListView } from './components/ListView.js';
 import { DetailView } from './components/DetailView.js';
 import { FormView } from './components/FormView.js';
 import { configureAgulAuth, type GetAuthHeaders } from './http/client.js';
+import { PluginProvider } from './plugins/PluginContext.js';
+import type { AgulFieldPlugin } from './plugins/types.js';
 
 export interface AGULRendererProps {
   /** OpenAPI/Swagger spec object */
@@ -38,6 +40,8 @@ export interface AGULRendererProps {
   token?: string;
   /** Custom auth headers (takes precedence over token) */
   getAuthHeaders?: GetAuthHeaders;
+  /** Custom field renderer plugins */
+  plugins?: AgulFieldPlugin[];
   /** Ant Design primary color */
   primaryColor?: string;
   /** Called when spec processing fails */
@@ -54,6 +58,7 @@ export function AGULRenderer({
   baseUrl,
   token,
   getAuthHeaders,
+  plugins = [],
   primaryColor = '#1890ff',
   onError,
   onReady,
@@ -64,7 +69,7 @@ export function AGULRenderer({
   const [routes, setRoutes] = useState<RouteConfig[]>([]);
   const [menu, setMenu] = useState<ReturnType<typeof generateMenu>>([]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     configureAgulAuth({ token, getAuthHeaders });
   }, [token, getAuthHeaders]);
 
@@ -205,46 +210,48 @@ export function AGULRenderer({
 
   return (
     <ConfigProvider theme={{ token: { colorPrimary: primaryColor } }}>
-      <BrowserRouter>
-        <AppLayout menu={menu} apiTitle={parsedAPI.basePath} apiVersion="1.0">
-          <Routes>
-            <Route path="/" element={<Navigate to={defaultPath} replace />} />
-            {routes
-              .filter((route) => route.component !== 'delete')
-              .map((route) => (
+      <PluginProvider plugins={plugins}>
+        <BrowserRouter>
+          <AppLayout menu={menu} apiTitle={parsedAPI.basePath} apiVersion="1.0">
+            <Routes>
+              <Route path="/" element={<Navigate to={defaultPath} replace />} />
+              {routes
+                .filter((route) => route.component !== 'delete')
+                .map((route) => (
+                <Route
+                  key={route.operationId}
+                  path={route.path}
+                  element={
+                    route.component === 'list' ? (
+                      <ListView route={route} baseUrl={parsedAPI.baseUrl} allRoutes={routes} />
+                    ) : route.component === 'detail' ? (
+                      <DetailView route={route} baseUrl={parsedAPI.baseUrl} allRoutes={routes} />
+                    ) : (
+                      <FormView
+                        route={route}
+                        baseUrl={parsedAPI.baseUrl}
+                        allRoutes={routes}
+                        schemas={parsedAPI.schemas}
+                      />
+                    )
+                  }
+                />
+              ))}
               <Route
-                key={route.operationId}
-                path={route.path}
+                path="*"
                 element={
-                  route.component === 'list' ? (
-                    <ListView route={route} baseUrl={parsedAPI.baseUrl} allRoutes={routes} />
-                  ) : route.component === 'detail' ? (
-                    <DetailView route={route} baseUrl={parsedAPI.baseUrl} allRoutes={routes} />
-                  ) : (
-                    <FormView
-                      route={route}
-                      baseUrl={parsedAPI.baseUrl}
-                      allRoutes={routes}
-                      schemas={parsedAPI.schemas}
-                    />
-                  )
+                  <Alert
+                    message="404 Not Found"
+                    description="The page you are looking for does not exist"
+                    type="warning"
+                    showIcon
+                  />
                 }
               />
-            ))}
-            <Route
-              path="*"
-              element={
-                <Alert
-                  message="404 Not Found"
-                  description="The page you are looking for does not exist"
-                  type="warning"
-                  showIcon
-                />
-              }
-            />
-          </Routes>
-        </AppLayout>
-      </BrowserRouter>
+            </Routes>
+          </AppLayout>
+        </BrowserRouter>
+      </PluginProvider>
     </ConfigProvider>
   );
 }

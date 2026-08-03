@@ -2,17 +2,30 @@
  * AGUL Demo App - showcases @agul/react library
  */
 
-import { useState } from 'react';
+import { useState, useLayoutEffect } from 'react';
 import { Upload, Button, Input, message } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import type { UploadFile } from 'antd';
-import { AGULRenderer } from '@agul/react';
+import { AGULRenderer, configureAgulAuth } from '@agul/react';
+import { demoFieldPlugins } from './plugins/index.js';
 import './App.css';
+
+function readInitialToken(): string {
+  if (typeof window === 'undefined') {
+    return '';
+  }
+
+  return new URLSearchParams(window.location.search).get('token') ?? '';
+}
 
 function App() {
   const [spec, setSpec] = useState<Record<string, unknown> | undefined>(undefined);
   const [specUrl, setSpecUrl] = useState<string | undefined>('/examples/petstore.json');
-  const [token, setToken] = useState('');
+  const [token, setToken] = useState(readInitialToken);
+
+  useLayoutEffect(() => {
+    configureAgulAuth({ token: token || undefined });
+  }, [token]);
 
   const handleUpload = async (file: UploadFile) => {
     try {
@@ -43,6 +56,15 @@ function App() {
           Reset to Petstore
         </Button>
         <Button
+          data-testid="demo-load-plugins-spec"
+          onClick={() => {
+            setSpec(undefined);
+            setSpecUrl('/examples/petstore-plugins.json');
+          }}
+        >
+          Plugins + Wizard
+        </Button>
+        <Button
           onClick={() => {
             setSpec(undefined);
             setSpecUrl('/examples/jsonplaceholder.json');
@@ -59,7 +81,12 @@ function App() {
         />
       </div>
 
-      <AGULRenderer spec={spec} specUrl={specUrl} token={token || undefined} />
+      <AGULRenderer
+        spec={spec}
+        specUrl={specUrl}
+        token={token || undefined}
+        plugins={demoFieldPlugins}
+      />
     </div>
   );
 }

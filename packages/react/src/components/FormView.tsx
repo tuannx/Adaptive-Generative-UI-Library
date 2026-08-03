@@ -23,6 +23,11 @@ import useSWR, { mutate } from 'swr';
 import { agulHttp, agulFetcher } from '../http/client.js';
 import type { RouteConfig, SchemaObject } from '@agul/core';
 import { routesShareResource } from '@agul/core';
+import { useAgulPlugins } from '../plugins/PluginContext.js';
+import { readWizardConfig } from '../plugins/schema-extensions.js';
+import { resolveFieldPlugin } from '../plugins/registry.js';
+import type { AgulFieldPlugin } from '../plugins/types.js';
+import { FormWizardLayout } from './FormWizardLayout.js';
 
 interface FormViewProps {
   route: RouteConfig;
@@ -39,6 +44,7 @@ export const FormView: React.FC<FormViewProps> = ({ route, baseUrl, allRoutes, s
   const params = useParams();
   const [form] = Form.useForm();
   const [loading, setLoading] = React.useState(false);
+  const plugins = useAgulPlugins();
 
   const isEdit = route.component === 'edit';
   const seedRecord = (location.state as { record?: Record<string, unknown> } | null)?.record;
@@ -126,11 +132,24 @@ export const FormView: React.FC<FormViewProps> = ({ route, baseUrl, allRoutes, s
   };
 
   // Generate form fields from schema
-  const formFields = React.useMemo(() => {
-    if (!route.schema) return [];
+  const resolvedSchema = React.useMemo(
+    () => resolveSchema(route.schema, schemas),
+    [route.schema, schemas],
+  );
+  const wizardConfig = React.useMemo(
+    () => (resolvedSchema ? readWizardConfig(resolvedSchema) : null),
+    [resolvedSchema],
+  );
 
-    return generateFormFields(route.schema, schemas);
-  }, [route.schema, schemas]);
+  const renderFields = (fieldFilter?: Set<string>) => {
+    if (!resolvedSchema) return [];
+
+    return generateFormFields(resolvedSchema, schemas, plugins, fieldFilter);
+  };
+
+  const submitForm = () => {
+    form.submit();
+  };
 
   if (loadingData) {
     return (
@@ -156,60 +175,86 @@ export const FormView: React.FC<FormViewProps> = ({ route, baseUrl, allRoutes, s
         </Space>
       }
     >
-      {formFields.length === 0 ? (
+      {resolvedSchema && Object.keys(resolvedSchema.properties ?? {}).length > 0 ? (
+        <Form
+          form={form}
+          layout="vertical"
+          preserve
+          onFinish={handleSubmit}
+          style={{ maxWidth: '800px' }}
+        >
+          {wizardConfig ? (
+            <FormWizardLayout
+              wizard={wizardConfig}
+              form={form}
+              loading={loading}
+              isEdit={isEdit}
+              onSubmit={submitForm}
+              onCancel={handleBack}
+            >
+              {(activeFields) => renderFields(activeFields)}
+            </FormWizardLayout>
+          ) : (
+            <>
+              {renderFields()}
+
+              <Form.Item>
+                <Space>
+                  <Button
+                    type="primary"
+                    htmlType="submit"
+                    icon={<SaveOutlined />}
+                    loading={loading}
+                    data-testid="agul-form-submit"
+                  >
+                    {isEdit ? 'Update' : 'Create'}
+                  </Button>
+                  <Button onClick={handleBack}>
+                    Cancel
+                  </Button>
+                </Space>
+              </Form.Item>
+            </>
+          )}
+        </Form>
+      ) : (
         <Alert
           message="No Schema Available"
           description="Cannot generate form without schema definition"
           type="warning"
           showIcon
         />
-      ) : (
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-          style={{ maxWidth: '800px' }}
-        >
-          {formFields}
-
-          <Form.Item>
-            <Space>
-              <Button
-                type="primary"
-                htmlType="submit"
-                icon={<SaveOutlined />}
-                loading={loading}
-                data-testid="agul-form-submit"
-              >
-                {isEdit ? 'Update' : 'Create'}
-              </Button>
-              <Button onClick={handleBack}>
-                Cancel
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
       )}
     </Card>
   );
 };
+
+function resolveSchema(
+  schema: SchemaObject | undefined,
+  schemas: Record<string, SchemaObject>,
+): SchemaObject | null {
+  if (!schema) return null;
+
+  if (schema.$ref) {
+    const refName = schema.$ref.split('/').pop();
+    if (refName && schemas[refName]) {
+      return schemas[refName];
+    }
+  }
+
+  return schema;
+}
 
 /**
  * Generate form fields from schema
  */
 function generateFormFields(
   schema: SchemaObject,
-  schemas: Record<string, SchemaObject>
+  schemas: Record<string, SchemaObject>,
+  plugins: AgulFieldPlugin[],
+  visibleFields?: Set<string>,
 ): React.ReactNode[] {
   const fields: React.ReactNode[] = [];
-
-  // Resolve $ref if present
-  if (schema.$ref) {
-    const refName = schema.$ref.split('/').pop();
-    if (refName && schemas[refName]) {
-      schema = schemas[refName];
-    }
-  }
 
   if (!schema.properties) {
     return fields;
@@ -221,15 +266,25 @@ function generateFormFields(
     const isRequired = required.includes(key);
     const label = formatLabel(key);
 
-    // Skip read-only fields like id
     if (key === 'id' || key === '_id' || key === 'createdAt' || key === 'updatedAt') {
       return;
     }
 
-    const fieldNode = generateField(key, prop, label, isRequired, schemas);
-    if (fieldNode) {
-      fields.push(fieldNode);
+    const fieldNode = generateField(key, prop, label, isRequired, schemas, plugins);
+    if (!fieldNode) {
+      return;
     }
+
+    if (visibleFields && !visibleFields.has(key)) {
+      fields.push(
+        <div key={key} hidden>
+          {fieldNode}
+        </div>,
+      );
+      return;
+    }
+
+    fields.push(fieldNode);
   });
 
   return fields;
@@ -243,14 +298,26 @@ function generateField(
   schema: SchemaObject,
   label: string,
   required: boolean,
-  schemas: Record<string, SchemaObject>
+  schemas: Record<string, SchemaObject>,
+  plugins: AgulFieldPlugin[],
 ): React.ReactNode {
-  // Resolve $ref
   if (schema.$ref) {
     const refName = schema.$ref.split('/').pop();
     if (refName && schemas[refName]) {
       schema = schemas[refName];
     }
+  }
+
+  const plugin = resolveFieldPlugin(plugins, {
+    name,
+    schema,
+    label,
+    required,
+    schemas,
+  });
+
+  if (plugin) {
+    return <React.Fragment key={name}>{plugin.render({ name, schema, label, required, schemas })}</React.Fragment>;
   }
 
   const rules = [

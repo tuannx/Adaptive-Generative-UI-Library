@@ -13,7 +13,11 @@ export const defaultMockPets: MockPet[] = [
   { id: 2, name: 'Snowball', status: 'pending', category: { id: 2, name: 'Cats' }, photoUrls: [] },
 ];
 
-export async function setupPetstoreMock(page: Page, initialPets = defaultMockPets): Promise<void> {
+export async function setupPetstoreMock(
+  page: Page,
+  initialPets = defaultMockPets,
+  options?: { onRequest?: (request: { authorization?: string; method: string; url: string }) => void },
+): Promise<void> {
   let pets = initialPets.map((p) => ({ ...p }));
   let nextId = Math.max(...pets.map((p) => p.id), 0) + 1;
 
@@ -25,6 +29,11 @@ export async function setupPetstoreMock(page: Page, initialPets = defaultMockPet
     }
 
     const method = route.request().method();
+    options?.onRequest?.({
+      authorization: route.request().headers()['authorization'],
+      method,
+      url,
+    });
 
     if (method === 'GET' && /\/pet\/\d+/.test(url)) {
       const id = Number(url.match(/\/pet\/(\d+)/)?.[1]);
