@@ -3,13 +3,23 @@
  */
 
 import React from 'react';
-import { Table, Button, Space, message, Popconfirm, Card } from 'antd';
-import { EyeOutlined, EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { Table, Button, Space, message, Popconfirm, Card, Input, Select } from 'antd';
+import { EyeOutlined, EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import useSWR, { mutate } from 'swr';
 import axios from 'axios';
-import type { RouteConfig } from '@agul/core';
-import { routesShareResource, buildRouterPath, buildPathParamsFromRecord, buildApiUrl } from '@agul/core';
+import type { RouteConfig, ListQueryParamBinding } from '@agul/core';
+import {
+  routesShareResource,
+  buildRouterPath,
+  buildPathParamsFromRecord,
+  buildApiUrl,
+  parseListQueryBindings,
+  withFallbackPagination,
+  getDefaultListQueryState,
+  buildListApiUrl,
+  type ListQueryState,
+} from '@agul/core';
 
 interface ListViewProps {
   route: RouteConfig;
@@ -21,9 +31,24 @@ const fetcher = (url: string) => axios.get(url).then(res => res.data);
 
 export const ListView: React.FC<ListViewProps> = ({ route, baseUrl, allRoutes }) => {
   const navigate = useNavigate();
-  const apiUrl = `${baseUrl}${route.apiEndpoint}`;
 
-  const { data, error, isLoading } = useSWR(apiUrl, fetcher);
+  const queryBindings = React.useMemo(
+    () => withFallbackPagination(parseListQueryBindings(route.parameters)),
+    [route.parameters],
+  );
+
+  const hasServerPagination = queryBindings.some(
+    (binding) => binding.role === 'page' || binding.role === 'limit' || binding.role === 'offset',
+  );
+  const searchBinding = queryBindings.find((binding) => binding.role === 'search');
+  const filterBindings = queryBindings.filter((binding) => binding.role === 'filter');
+
+  const [queryState, setQueryState] = React.useState<ListQueryState>(() =>
+    getDefaultListQueryState(queryBindings),
+  );
+
+  const listUrl = buildListApiUrl(baseUrl, route.apiEndpoint, queryBindings, queryState);
+  const { data, error, isLoading } = useSWR(listUrl, fetcher);
 
   // Find related routes for this resource
   const detailRoute = allRoutes.find(r =>
@@ -69,8 +94,7 @@ export const ListView: React.FC<ListViewProps> = ({ route, baseUrl, allRoutes })
       await axios.delete(deleteUrl);
       message.success('Deleted successfully');
 
-      // Refresh data
-      mutate(apiUrl);
+      mutate(listUrl);
     } catch (err: any) {
       message.error(`Delete failed: ${err.message}`);
     }
@@ -100,20 +124,50 @@ export const ListView: React.FC<ListViewProps> = ({ route, baseUrl, allRoutes })
     }
   };
 
-  // Generate table columns from schema or data
-  const columns = React.useMemo(() => {
+  const rawTableData = React.useMemo(() => {
     if (!data) return [];
 
-    // Get array data
     const arrayData = Array.isArray(data) ? data :
                       data.data ? data.data :
                       data.items ? data.items :
                       [data];
 
-    if (arrayData.length === 0) return [];
+    return arrayData.map((item: any, index: number) => ({
+      ...item,
+      key: item.id || item._id || item.uuid || index
+    }));
+  }, [data]);
 
-    // Get keys from first item — skip nested/heavy fields for table width
-    const firstItem = arrayData[0];
+  const filteredTableData = React.useMemo(() => {
+    if (searchBinding || !queryState.search.trim()) {
+      return rawTableData;
+    }
+
+    const query = queryState.search.trim().toLowerCase();
+    return rawTableData.filter((row: Record<string, unknown>) =>
+      Object.values(row).some((value) => String(value).toLowerCase().includes(query)),
+    );
+  }, [rawTableData, queryState.search, searchBinding]);
+
+  const tableData = React.useMemo(() => {
+    if (hasServerPagination) {
+      return filteredTableData;
+    }
+
+    const start = (queryState.page - 1) * queryState.pageSize;
+    return filteredTableData.slice(start, start + queryState.pageSize);
+  }, [filteredTableData, hasServerPagination, queryState.page, queryState.pageSize]);
+
+  const paginationTotal = hasServerPagination
+    ? queryState.page * queryState.pageSize +
+      (filteredTableData.length === queryState.pageSize ? queryState.pageSize : 0)
+    : filteredTableData.length;
+
+  // Generate table columns from schema or data
+  const columns = React.useMemo(() => {
+    if (rawTableData.length === 0) return [];
+
+    const firstItem = rawTableData[0];
     const skipKeys = new Set(['photoUrls', 'tags', 'category']);
     const keys = Object.keys(firstItem).filter((k) => !skipKeys.has(k));
 
@@ -126,7 +180,6 @@ export const ListView: React.FC<ListViewProps> = ({ route, baseUrl, allRoutes })
       render: (value: any) => formatValue(value)
     }));
 
-    // Add actions column
     cols.push({
       title: 'Actions',
       key: 'actions',
@@ -179,22 +232,11 @@ export const ListView: React.FC<ListViewProps> = ({ route, baseUrl, allRoutes })
     });
 
     return cols;
-  }, [data, detailRoute, editRoute, deleteEndpoint]);
+  }, [rawTableData, detailRoute, editRoute, deleteEndpoint]);
 
-  // Extract array data
-  const tableData = React.useMemo(() => {
-    if (!data) return [];
-
-    const arrayData = Array.isArray(data) ? data :
-                      data.data ? data.data :
-                      data.items ? data.items :
-                      [data];
-
-    return arrayData.map((item: any, index: number) => ({
-      ...item,
-      key: item.id || item._id || item.uuid || index
-    }));
-  }, [data]);
+  const updateQueryState = (patch: Partial<ListQueryState>) => {
+    setQueryState((current) => ({ ...current, page: 1, ...patch }));
+  };
 
   if (error) {
     return (
@@ -222,15 +264,47 @@ export const ListView: React.FC<ListViewProps> = ({ route, baseUrl, allRoutes })
         )
       }
     >
+      <Space wrap style={{ marginBottom: 16 }}>
+        <Input
+          allowClear
+          prefix={<SearchOutlined />}
+          placeholder="Search"
+          value={queryState.search}
+          data-testid="agul-list-search"
+          onChange={(event) => updateQueryState({ search: event.target.value })}
+          style={{ width: 240 }}
+        />
+        {filterBindings.map((binding) => (
+          <FilterControl
+            key={binding.name}
+            binding={binding}
+            value={queryState.filters[binding.name]}
+            onChange={(value) =>
+              updateQueryState({
+                filters: { ...queryState.filters, [binding.name]: value },
+              })
+            }
+          />
+        ))}
+      </Space>
       <Table
         data-testid="agul-list-table"
         columns={columns}
         dataSource={tableData}
         loading={isLoading}
         pagination={{
-          pageSize: 10,
+          current: queryState.page,
+          pageSize: queryState.pageSize,
+          total: paginationTotal,
           showSizeChanger: true,
-          showTotal: (total) => `Total ${total} items`
+          showTotal: (total) => `Total ${total} items`,
+          onChange: (page, pageSize) => {
+            setQueryState((current) => ({
+              ...current,
+              page,
+              pageSize: pageSize ?? current.pageSize,
+            }));
+          },
         }}
         scroll={{ x: 960 }}
         tableLayout="fixed"
@@ -239,7 +313,44 @@ export const ListView: React.FC<ListViewProps> = ({ route, baseUrl, allRoutes })
   );
 };
 
-// Helper functions
+function FilterControl({
+  binding,
+  value,
+  onChange,
+}: {
+  binding: ListQueryParamBinding;
+  value?: string;
+  onChange: (value: string) => void;
+}) {
+  const label = formatColumnName(binding.name);
+
+  if (binding.schema?.enum?.length) {
+    return (
+      <Select
+        value={value}
+        placeholder={label}
+        data-testid={`agul-list-filter-${binding.name}`}
+        style={{ minWidth: 160 }}
+        options={binding.schema.enum.map((option) => ({
+          value: String(option),
+          label: String(option),
+        }))}
+        onChange={onChange}
+      />
+    );
+  }
+
+  return (
+    <Input
+      value={value}
+      placeholder={label}
+      data-testid={`agul-list-filter-${binding.name}`}
+      style={{ width: 180 }}
+      onChange={(event) => onChange(event.target.value)}
+    />
+  );
+}
+
 function formatColumnName(name: string): string {
   return name
     .replace(/([A-Z])/g, ' $1')

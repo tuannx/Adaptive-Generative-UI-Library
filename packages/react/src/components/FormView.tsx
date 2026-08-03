@@ -104,7 +104,8 @@ export const FormView: React.FC<FormViewProps> = ({ route, baseUrl, allRoutes, s
 
       // Navigate back to list
       if (listRoute) {
-        await mutate(`${baseUrl}${listRoute.apiEndpoint}`);
+        const listPrefix = `${baseUrl}${listRoute.apiEndpoint}`;
+        await mutate((key) => typeof key === 'string' && key.startsWith(listPrefix));
         navigate(listRoute.path);
       } else {
         navigate(-1);

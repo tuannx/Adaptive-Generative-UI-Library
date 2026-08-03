@@ -37,11 +37,14 @@ export async function setupPetstoreMock(page: Page, initialPets = defaultMockPet
       return;
     }
 
-    if (method === 'GET' && /\/pet/.test(url)) {
+    if (method === 'GET' && /\/pet/.test(url) && !/\/pet\/\d+/.test(url)) {
+      const urlObj = new URL(url);
+      const status = urlObj.searchParams.get('status');
+      const filtered = status ? pets.filter((p) => p.status === status) : pets;
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(pets),
+        body: JSON.stringify(filtered),
       });
       return;
     }
