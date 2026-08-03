@@ -77,4 +77,25 @@ test.describe('AGUL Demo — CRUD flow', () => {
     await expect(page.getByTestId('agul-list-table')).not.toContainText('Snowball');
     await expect(page.getByTestId('agul-list-table')).toContainText('Fluffy');
   });
+
+  test('filters list via status query param', async ({ page }) => {
+    await waitForAgulReady(page);
+
+    await page.getByTestId('agul-list-filter-status').click();
+    await page
+      .locator('.ant-select-dropdown:visible .ant-select-item-option')
+      .filter({ hasText: 'pending' })
+      .click();
+
+    await expect(page.getByTestId('agul-list-table')).toContainText('Snowball');
+    await expect(page.getByTestId('agul-list-table')).not.toContainText('Fluffy');
+  });
+
+  test('searches list client-side when no search param', async ({ page }) => {
+    await waitForAgulReady(page);
+
+    await page.getByTestId('agul-list-search').fill('Snow');
+    await expect(page.getByTestId('agul-list-table')).toContainText('Snowball');
+    await expect(page.getByTestId('agul-list-table')).not.toContainText('Fluffy');
+  });
 });
