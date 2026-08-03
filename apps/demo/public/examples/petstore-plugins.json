@@ -1,0 +1,159 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "AGUL Plugin Petstore",
+    "version": "1.0.0",
+    "description": "Petstore demo with wizard layout and custom field plugins"
+  },
+  "host": "petstore.swagger.io",
+  "basePath": "/v2",
+  "schemes": ["https"],
+  "tags": [{ "name": "pet", "description": "Pets with plugin-driven forms" }],
+  "paths": {
+    "/pet/findByStatus": {
+      "get": {
+        "tags": ["pet"],
+        "summary": "Find pets by status",
+        "operationId": "findPetsByStatus",
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": true,
+            "type": "array",
+            "items": { "type": "string", "enum": ["available", "pending", "sold"] },
+            "collectionFormat": "multi"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": { "type": "array", "items": { "$ref": "#/definitions/Pet" } }
+          }
+        }
+      }
+    },
+    "/pet/{petId}": {
+      "get": {
+        "tags": ["pet"],
+        "summary": "Find pet by ID",
+        "operationId": "getPetById",
+        "produces": ["application/json"],
+        "parameters": [
+          { "name": "petId", "in": "path", "required": true, "type": "integer", "format": "int64" }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": { "$ref": "#/definitions/Pet" }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["pet"],
+        "summary": "Deletes a pet",
+        "operationId": "deletePet",
+        "produces": ["application/json"],
+        "parameters": [
+          { "name": "petId", "in": "path", "required": true, "type": "integer", "format": "int64" }
+        ],
+        "responses": {
+          "200": { "description": "Pet deleted" }
+        }
+      }
+    },
+    "/pet": {
+      "post": {
+        "tags": ["pet"],
+        "summary": "Add a new pet (wizard)",
+        "operationId": "addPet",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": { "$ref": "#/definitions/Pet" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": { "$ref": "#/definitions/Pet" }
+          }
+        }
+      },
+      "put": {
+        "tags": ["pet"],
+        "summary": "Update an existing pet",
+        "operationId": "updatePet",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": { "$ref": "#/definitions/Pet" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": { "$ref": "#/definitions/Pet" }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "Pet": {
+      "type": "object",
+      "required": ["name", "status"],
+      "x-agul-layout": "wizard",
+      "x-agul-steps": [
+        {
+          "title": "Basics",
+          "description": "Name and availability",
+          "fields": ["name", "status"]
+        },
+        {
+          "title": "Media",
+          "description": "Photos and accent color",
+          "fields": ["photoUrls", "accentColor"]
+        },
+        {
+          "title": "Notes",
+          "description": "Optional details",
+          "fields": ["notes"]
+        }
+      ],
+      "properties": {
+        "id": { "type": "integer", "format": "int64" },
+        "name": { "type": "string", "example": "Fluffy" },
+        "status": {
+          "type": "string",
+          "enum": ["available", "pending", "sold"],
+          "description": "pet status in the store"
+        },
+        "photoUrls": {
+          "type": "array",
+          "items": { "type": "string" },
+          "x-agul-widget": "image-upload",
+          "description": "Pet photos"
+        },
+        "accentColor": {
+          "type": "string",
+          "x-agul-widget": "color-picker",
+          "description": "UI accent color for pet profile"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional notes about the pet"
+        }
+      }
+    }
+  }
+}

@@ -9,6 +9,16 @@ export {
 } from './http/client.js';
 export type { GetAuthHeaders, AgulAuthConfig } from './http/client.js';
 
+export { PluginProvider, useAgulPlugins } from './plugins/PluginContext.js';
+export { resolveFieldPlugin } from './plugins/registry.js';
+export { readSchemaExtension, readSchemaWidget, readWizardConfig } from './plugins/schema-extensions.js';
+export type {
+  AgulFieldPlugin,
+  AgulFieldRenderContext,
+  AgulWizardConfig,
+  AgulWizardStep,
+} from './plugins/types.js';
+
 export { AppLayout } from './components/AppLayout.js';
 export { ListView } from './components/ListView.js';
 export { DetailView } from './components/DetailView.js';

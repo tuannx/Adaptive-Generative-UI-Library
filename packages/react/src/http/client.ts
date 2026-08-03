@@ -1,4 +1,4 @@
-import axios, { type AxiosInstance, type InternalAxiosRequestConfig } from 'axios';
+import axios, { AxiosHeaders, type AxiosInstance, type InternalAxiosRequestConfig } from 'axios';
 
 export type GetAuthHeaders = () =>
   Record<string, string> | Promise<Record<string, string>>;
@@ -30,9 +30,13 @@ export async function applyAuthHeaders(
   config: InternalAxiosRequestConfig,
 ): Promise<InternalAxiosRequestConfig> {
   const authHeaders = await resolveAuthHeaders();
+  const headers = AxiosHeaders.from(config.headers);
+
   for (const [key, value] of Object.entries(authHeaders)) {
-    config.headers.set(key, value);
+    headers.set(key, value);
   }
+
+  config.headers = headers;
   return config;
 }
 
