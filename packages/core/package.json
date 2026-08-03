@@ -2,6 +2,7 @@
   "name": "@agul/core",
   "version": "0.1.0",
   "description": "OpenAPI parser and route generator for AGUL",
+  "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -13,6 +14,23 @@
     }
   },
   "files": ["dist"],
+  "keywords": [
+    "openapi",
+    "swagger",
+    "parser",
+    "generator",
+    "api",
+    "typescript",
+    "agul"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tuannx/Adaptive-Generative-UI-Library.git",
+    "directory": "packages/core"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsup && tsc -p tsconfig.build.json",
     "dev": "tsup --watch",

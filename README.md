@@ -2,6 +2,18 @@
 
 > **OpenAPI → React UI** for AI Agents. Monorepo with `@agul/core`, `@agul/react`, and demo app.
 
+## Install
+
+```bash
+npm install @agul/react
+```
+
+`@agul/react` includes `@agul/core` as a dependency. Peer dependencies (install in your app):
+
+```bash
+npm install react react-dom antd axios swr react-router-dom
+```
+
 ## Quick Start
 
 ```bash
@@ -9,6 +21,7 @@ npm install
 npm run dev          # turbo: watch all packages + demo at :5173
 npm run build        # build core → react → demo
 npm run test         # vitest (@agul/core)
+npm run verify-pack  # npm pack + validate-consumer build
 npm run swarm:next   # pick next GitHub swarm task
 ```
 
@@ -28,12 +41,23 @@ import { createAGULFromSpec } from '@agul/react';
 const { api, routes, menu } = await createAGULFromSpec(openApiJson);
 ```
 
+## Publishing
+
+Packages `@agul/core` and `@agul/react` are versioned with [Changesets](https://github.com/changesets/changesets). The release workflow opens a version PR and publishes to npm when merged (requires `NPM_TOKEN` secret).
+
+```bash
+npm run changeset          # describe your change
+npm run version-packages   # bump versions (usually via CI)
+npm run verify-pack        # verify tarballs before publish
+```
+
 ## Monorepo Structure
 
 ```
 packages/core/   @agul/core   — parser, generator (no React)
 packages/react/  @agul/react  — AGULRenderer, CRUD views
 apps/demo/       @agul/demo   — Vite demo app
+apps/validate-consumer/      — ship-validate: workspace import smoke test
 ```
 
 ## Swarm Development
