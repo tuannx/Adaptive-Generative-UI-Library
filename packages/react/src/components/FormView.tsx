@@ -20,7 +20,7 @@ import {
 import { SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import useSWR, { mutate } from 'swr';
-import axios from 'axios';
+import { agulHttp, agulFetcher } from '../http/client.js';
 import type { RouteConfig, SchemaObject } from '@agul/core';
 import { routesShareResource } from '@agul/core';
 
@@ -31,7 +31,7 @@ interface FormViewProps {
   schemas: Record<string, SchemaObject>;
 }
 
-const fetcher = (url: string) => axios.get(url).then(res => res.data);
+const fetcher = agulFetcher;
 
 export const FormView: React.FC<FormViewProps> = ({ route, baseUrl, allRoutes, schemas }) => {
   const navigate = useNavigate();
@@ -95,10 +95,10 @@ export const FormView: React.FC<FormViewProps> = ({ route, baseUrl, allRoutes, s
 
       // Send request
       if (isEdit) {
-        await axios.put(apiUrl, payload);
+        await agulHttp.put(apiUrl, payload);
         message.success('Updated successfully');
       } else {
-        await axios.post(apiUrl, payload);
+        await agulHttp.post(apiUrl, payload);
         message.success('Created successfully');
       }
 

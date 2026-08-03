@@ -7,7 +7,7 @@ import { Card, Descriptions, Button, Space, message, Popconfirm, Spin, Alert } f
 import { EditOutlined, DeleteOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import useSWR, { mutate } from 'swr';
-import axios from 'axios';
+import { agulHttp, agulFetcher } from '../http/client.js';
 import type { RouteConfig } from '@agul/core';
 import { routesShareResource } from '@agul/core';
 
@@ -17,7 +17,7 @@ interface DetailViewProps {
   allRoutes: RouteConfig[];
 }
 
-const fetcher = (url: string) => axios.get(url).then(res => res.data);
+const fetcher = agulFetcher;
 
 export const DetailView: React.FC<DetailViewProps> = ({ route, baseUrl, allRoutes }) => {
   const navigate = useNavigate();
@@ -65,7 +65,7 @@ export const DetailView: React.FC<DetailViewProps> = ({ route, baseUrl, allRoute
     }
 
     try {
-      await axios.delete(apiUrl);
+      await agulHttp.delete(apiUrl);
       message.success('Deleted successfully');
 
       if (listRoute) {

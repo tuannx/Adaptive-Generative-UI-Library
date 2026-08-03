@@ -21,6 +21,7 @@ import { AppLayout } from './components/AppLayout.js';
 import { ListView } from './components/ListView.js';
 import { DetailView } from './components/DetailView.js';
 import { FormView } from './components/FormView.js';
+import { configureAgulAuth, type GetAuthHeaders } from './http/client.js';
 
 export interface AGULRendererProps {
   /** OpenAPI/Swagger spec object */
@@ -33,6 +34,10 @@ export interface AGULRendererProps {
   resourcePath?: string;
   /** Override API base URL (required when using jsonSchema) */
   baseUrl?: string;
+  /** Bearer JWT token for API requests */
+  token?: string;
+  /** Custom auth headers (takes precedence over token) */
+  getAuthHeaders?: GetAuthHeaders;
   /** Ant Design primary color */
   primaryColor?: string;
   /** Called when spec processing fails */
@@ -47,6 +52,8 @@ export function AGULRenderer({
   jsonSchema,
   resourcePath,
   baseUrl,
+  token,
+  getAuthHeaders,
   primaryColor = '#1890ff',
   onError,
   onReady,
@@ -56,6 +63,10 @@ export function AGULRenderer({
   const [parsedAPI, setParsedAPI] = useState<ParsedAPI | null>(null);
   const [routes, setRoutes] = useState<RouteConfig[]>([]);
   const [menu, setMenu] = useState<ReturnType<typeof generateMenu>>([]);
+
+  useEffect(() => {
+    configureAgulAuth({ token, getAuthHeaders });
+  }, [token, getAuthHeaders]);
 
   const applyParsedApi = useCallback(
     (parsed: ParsedAPI) => {

@@ -3,7 +3,7 @@
  */
 
 import { useState } from 'react';
-import { Upload, Button, message } from 'antd';
+import { Upload, Button, Input, message } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import type { UploadFile } from 'antd';
 import { AGULRenderer } from '@agul/react';
@@ -12,6 +12,7 @@ import './App.css';
 function App() {
   const [spec, setSpec] = useState<Record<string, unknown> | undefined>(undefined);
   const [specUrl, setSpecUrl] = useState<string | undefined>('/examples/petstore.json');
+  const [token, setToken] = useState('');
 
   const handleUpload = async (file: UploadFile) => {
     try {
@@ -49,9 +50,16 @@ function App() {
         >
           JSONPlaceholder
         </Button>
+        <Input.Password
+          placeholder="Bearer token (mock)"
+          value={token}
+          data-testid="demo-auth-token"
+          onChange={(event) => setToken(event.target.value)}
+          style={{ width: 220 }}
+        />
       </div>
 
-      <AGULRenderer spec={spec} specUrl={specUrl} />
+      <AGULRenderer spec={spec} specUrl={specUrl} token={token || undefined} />
     </div>
   );
 }
