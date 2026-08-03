@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generateUIFromOpenAPI } from './generate-ui.js';
+import { generateUIFromOpenAPI, generateUIFromJsonSchema } from './generate-ui.js';
 
 const petstoreSpec = {
   openapi: '3.0.0',
@@ -55,5 +55,31 @@ describe('generateUIFromOpenAPI', () => {
     });
 
     expect(result.baseUrl).toBe('https://api.example.com');
+  });
+});
+
+const petJsonSchema = {
+  type: 'object',
+  title: 'Pet',
+  required: ['id', 'name'],
+  properties: {
+    id: { type: 'integer' },
+    name: { type: 'string' },
+    status: { type: 'string' },
+  },
+};
+
+describe('generateUIFromJsonSchema', () => {
+  it('returns routes and embed snippet from JSON Schema', async () => {
+    const result = await generateUIFromJsonSchema(petJsonSchema, {
+      baseUrl: 'https://api.example.com',
+      resourcePath: '/pets',
+    });
+
+    expect(result.routeCount).toBeGreaterThan(0);
+    expect(result.menu.length).toBeGreaterThan(0);
+    expect(result.routes.some((route) => route.component === 'list')).toBe(true);
+    expect(result.embed.react).toContain('jsonSchema');
+    expect(result.embed.react).toContain('resourcePath="/pets"');
   });
 });

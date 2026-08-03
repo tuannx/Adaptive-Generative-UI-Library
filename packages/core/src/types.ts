@@ -94,3 +94,11 @@ export interface MenuItem {
 export interface GroupedRoutes {
   [tag: string]: RouteConfig[];
 }
+
+export interface JsonSchemaInputOptions {
+  baseUrl: string;
+  resourcePath?: string;
+  title?: string;
+  idParam?: string;
+  tag?: string;
+}

@@ -8,11 +8,14 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ConfigProvider, Spin, Alert, message } from 'antd';
 import {
   parseOpenAPI,
+  parseJsonSchema,
   generateRoutes,
   groupRoutesByTag,
   generateMenu,
   type ParsedAPI,
   type RouteConfig,
+  type SchemaObject,
+  type JsonSchemaInputOptions,
 } from '@agul/core';
 import { AppLayout } from './components/AppLayout.js';
 import { ListView } from './components/ListView.js';
@@ -24,7 +27,11 @@ export interface AGULRendererProps {
   spec?: Record<string, unknown>;
   /** URL to fetch OpenAPI spec from */
   specUrl?: string;
-  /** Override API base URL */
+  /** Plain JSON Schema for schema-only UI generation */
+  jsonSchema?: SchemaObject;
+  /** REST resource path when using jsonSchema (e.g. /pets) */
+  resourcePath?: string;
+  /** Override API base URL (required when using jsonSchema) */
   baseUrl?: string;
   /** Ant Design primary color */
   primaryColor?: string;
@@ -37,6 +44,8 @@ export interface AGULRendererProps {
 export function AGULRenderer({
   spec,
   specUrl,
+  jsonSchema,
+  resourcePath,
   baseUrl,
   primaryColor = '#1890ff',
   onError,
@@ -48,13 +57,8 @@ export function AGULRenderer({
   const [routes, setRoutes] = useState<RouteConfig[]>([]);
   const [menu, setMenu] = useState<ReturnType<typeof generateMenu>>([]);
 
-  const processSpec = useCallback(
-    async (specData: Record<string, unknown>) => {
-      const parsed = await parseOpenAPI(specData);
-      if (baseUrl) {
-        parsed.baseUrl = baseUrl;
-      }
-
+  const applyParsedApi = useCallback(
+    (parsed: ParsedAPI) => {
       const generatedRoutes = generateRoutes(parsed);
       const grouped = groupRoutesByTag(generatedRoutes);
       const generatedMenu = generateMenu(grouped);
@@ -64,7 +68,26 @@ export function AGULRenderer({
       setMenu(generatedMenu);
       onReady?.(parsed, generatedRoutes);
     },
-    [baseUrl, onReady],
+    [onReady],
+  );
+
+  const processSpec = useCallback(
+    async (specData: Record<string, unknown>) => {
+      const parsed = await parseOpenAPI(specData);
+      if (baseUrl) {
+        parsed.baseUrl = baseUrl;
+      }
+      applyParsedApi(parsed);
+    },
+    [baseUrl, applyParsedApi],
+  );
+
+  const processJsonSchema = useCallback(
+    async (schema: SchemaObject, schemaOptions: JsonSchemaInputOptions) => {
+      const parsed = await parseJsonSchema(schema, schemaOptions);
+      applyParsedApi(parsed);
+    },
+    [applyParsedApi],
   );
 
   useEffect(() => {
@@ -75,6 +98,25 @@ export function AGULRenderer({
       setError(null);
 
       try {
+        const inputCount = [spec, specUrl, jsonSchema].filter(Boolean).length;
+        if (inputCount !== 1) {
+          throw new Error('Provide exactly one of spec, specUrl, or jsonSchema');
+        }
+
+        if (jsonSchema) {
+          if (!baseUrl) {
+            throw new Error('baseUrl is required when using jsonSchema');
+          }
+
+          if (!cancelled) {
+            await processJsonSchema(jsonSchema, {
+              baseUrl,
+              resourcePath,
+            });
+          }
+          return;
+        }
+
         let specData = spec;
         if (!specData && specUrl) {
           const response = await fetch(specUrl);
@@ -109,7 +151,7 @@ export function AGULRenderer({
     return () => {
       cancelled = true;
     };
-  }, [spec, specUrl, processSpec, onError]);
+  }, [spec, specUrl, jsonSchema, resourcePath, baseUrl, processSpec, processJsonSchema, onError]);
 
   if (loading) {
     return (
@@ -204,6 +246,17 @@ export async function createAGULFromSpec(
   if (options?.baseUrl) {
     parsed.baseUrl = options.baseUrl;
   }
+  const routes = generateRoutes(parsed);
+  const grouped = groupRoutesByTag(routes);
+  const menu = generateMenu(grouped);
+  return { api: parsed, routes, menu };
+}
+
+export async function createAGULFromJsonSchema(
+  schema: SchemaObject,
+  options: JsonSchemaInputOptions,
+): Promise<{ api: ParsedAPI; routes: RouteConfig[]; menu: ReturnType<typeof generateMenu> }> {
+  const parsed = await parseJsonSchema(schema, options);
   const routes = generateRoutes(parsed);
   const grouped = groupRoutesByTag(routes);
   const menu = generateMenu(grouped);
