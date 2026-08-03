@@ -7,7 +7,7 @@ import { Table, Button, Space, message, Popconfirm, Card, Input, Select } from '
 import { EyeOutlined, EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import useSWR, { mutate } from 'swr';
-import axios from 'axios';
+import { agulHttp, agulFetcher } from '../http/client.js';
 import type { RouteConfig, ListQueryParamBinding } from '@agul/core';
 import {
   routesShareResource,
@@ -27,7 +27,7 @@ interface ListViewProps {
   allRoutes: RouteConfig[];
 }
 
-const fetcher = (url: string) => axios.get(url).then(res => res.data);
+const fetcher = agulFetcher;
 
 export const ListView: React.FC<ListViewProps> = ({ route, baseUrl, allRoutes }) => {
   const navigate = useNavigate();
@@ -91,7 +91,7 @@ export const ListView: React.FC<ListViewProps> = ({ route, baseUrl, allRoutes })
 
       const deleteUrl = buildApiUrl(baseUrl, deleteEndpoint.apiEndpoint, pathParams);
 
-      await axios.delete(deleteUrl);
+      await agulHttp.delete(deleteUrl);
       message.success('Deleted successfully');
 
       mutate(listUrl);
