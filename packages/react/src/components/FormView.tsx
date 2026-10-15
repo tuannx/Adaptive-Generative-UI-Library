@@ -30,6 +30,7 @@ import { resolveFieldPlugin } from '../plugins/registry.js';
 import type { AgulFieldPlugin } from '../plugins/types.js';
 import { useAgulFetcher, useAgulNavigate, useAgulRuntime, useRevalidateList } from '../runtime.js';
 import { FormWizardLayout } from './FormWizardLayout.js';
+import { encodeBody } from '../http/encode.js';
 import { formatLabel, unwrapRecord } from './format.js';
 
 type Row = Record<string, unknown>;
@@ -83,9 +84,16 @@ export const FormView: React.FC<FormViewProps> = ({ resource, mode }) => {
 
     try {
       const url = buildApiUrl(baseUrl, operation.apiEndpoint, params);
-      const response = await http.request({ url, method: operation.method, data: payload });
+      const response = await http.request({
+        url,
+        method: operation.method,
+        data: encodeBody(payload, operation.contentType),
+        headers: operation.contentType && !operation.contentType.startsWith('multipart/')
+          ? { 'Content-Type': operation.contentType }
+          : undefined,
+      });
       message.success(isEdit ? 'Updated successfully' : 'Created successfully');
-      await revalidate();
+      await revalidate(params);
 
       if (resource.paths.list) {
         navigate(buildRouterPath(resource.paths.list, params));

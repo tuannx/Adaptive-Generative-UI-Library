@@ -33,8 +33,12 @@ interface ListPage {
 
 const MAX_COLUMNS = 6;
 
-function toListPage(body: unknown, totalHeader: unknown): ListPage {
-  const rows = unwrapList(body);
+function toListPage(body: unknown, totalHeader: unknown, rowsPath: string[] = []): ListPage {
+  const located = rowsPath.reduce<unknown>(
+    (node, key) => (node && typeof node === 'object' ? (node as Row)[key] : undefined),
+    body,
+  );
+  const rows = Array.isArray(located) ? located : unwrapList(body);
   const envelope = body && typeof body === 'object' ? (body as Row) : {};
   const total = Number(totalHeader ?? envelope.total ?? envelope.totalCount ?? envelope.count);
   return {
@@ -64,7 +68,7 @@ export const ListView: React.FC<ListViewProps> = ({ resource }) => {
 
   const listUrl = buildListApiUrl(baseUrl, list.apiEndpoint, queryBindings, queryState, routeParams);
   const { data, error, isLoading } = useSWR(listUrl, (url: string) =>
-    http.get(url).then((res) => toListPage(res.data, res.headers['x-total-count'])),
+    http.get(url).then((res) => toListPage(res.data, res.headers['x-total-count'], list.rowsPath)),
   );
 
   const rows = React.useMemo(
@@ -104,7 +108,7 @@ export const ListView: React.FC<ListViewProps> = ({ resource }) => {
     try {
       await http.delete(buildApiUrl(baseUrl, remove.apiEndpoint, pathParams));
       message.success('Deleted successfully');
-      await revalidate();
+      await revalidate(routeParams);
     } catch (err) {
       message.error(`Delete failed: ${err instanceof Error ? err.message : String(err)}`);
     }

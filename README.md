@@ -65,6 +65,14 @@ resource carries its `list` / `detail` / `create` / `update` / `remove` operatio
 A list like `GET /pet/findByStatus` with no item endpoints of its own borrows them from its parent (`/pet/{petId}`)
 when both return the same schema, which is how Swagger Petstore gets full CRUD.
 
+Specs can be JSON or YAML. Lists nested under a path param (`/orgs/{org}/members`) appear in the menu and
+ask for the param. Request bodies are sent as JSON, `x-www-form-urlencoded` or `multipart` per the spec.
+See [docs/real-world-coverage.md](./docs/real-world-coverage.md) for results on 19 public APIs
+(Stripe, GitHub, Twilio, Kubernetes, …) and known gaps — notably **CORS**: for APIs that can't be called
+from a browser, set `baseUrl` to a same-origin proxy.
+
+The demo accepts `?spec=<url>` (or paste a URL in the toolbar) to try any spec.
+
 ## MCP Server (Agents)
 
 ```bash

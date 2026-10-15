@@ -34,7 +34,7 @@ export const DetailView: React.FC<DetailViewProps> = ({ resource }) => {
       const pathParams = { ...buildPathParamsFromRecord(remove.apiEndpoint, record ?? {}), ...params };
       await http.delete(buildApiUrl(baseUrl, remove.apiEndpoint, pathParams));
       message.success('Deleted successfully');
-      await revalidate();
+      await revalidate(params);
       handleBack();
     } catch (err) {
       message.error(`Delete failed: ${err instanceof Error ? err.message : String(err)}`);

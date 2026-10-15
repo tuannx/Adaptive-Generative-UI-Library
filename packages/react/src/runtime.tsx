@@ -44,13 +44,17 @@ export function useAgulNavigate() {
   );
 }
 
-/** Revalidates every cached page/filter variant of a resource's list. */
+/** Revalidates every cached page/filter variant of a resource's list (scoped to the given path params). */
 export function useRevalidateList(resource: Resource) {
   const { mutate } = useSWRConfig();
   const { baseUrl } = useAgulRuntime();
-  return React.useCallback(async () => {
-    if (!resource.list) return;
-    const prefix = buildApiUrl(baseUrl, resource.list.apiEndpoint);
-    await mutate((key) => typeof key === 'string' && key.startsWith(prefix));
-  }, [mutate, baseUrl, resource.list]);
+  return React.useCallback(
+    async (pathParams: Record<string, string | undefined> = {}) => {
+      if (!resource.list) return;
+      const url = buildApiUrl(baseUrl, resource.list.apiEndpoint, pathParams);
+      const prefix = url.includes('{') ? url.slice(0, url.indexOf('{')) : url;
+      await mutate((key) => typeof key === 'string' && key.startsWith(prefix));
+    },
+    [mutate, baseUrl, resource.list],
+  );
 }

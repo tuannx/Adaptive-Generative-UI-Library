@@ -26,6 +26,8 @@ export interface GeneratedUIConfig {
     tag: string;
     operations: string[];
     fields: string[];
+    /** Path params needed to reach this resource's list (e.g. `org` for /orgs/:org/members). */
+    params: string[];
   }>;
   routes: Array<{
     path: string;
@@ -75,6 +77,7 @@ function buildGeneratedUIConfig(
       tag: resource.tag,
       operations: (['list', 'detail', 'create', 'update', 'remove'] as const).filter((op) => resource[op]),
       fields: Object.keys(resource.recordSchema?.properties ?? {}),
+      params: [...(resource.paths.list ?? '').matchAll(/:([^/]+)/g)].map((match) => match[1]),
     })),
     routes: routes.map((route: RouteConfig) => ({
       path: route.path,

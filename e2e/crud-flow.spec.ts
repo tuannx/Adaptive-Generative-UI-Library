@@ -114,6 +114,7 @@ test.describe('AGUL Demo — resource model', () => {
 
   test('create-only resources are reachable from the menu', async ({ page }) => {
     await waitForAgulReady(page);
+    await page.getByTestId('agul-sidebar').getByText('Store', { exact: true }).click();
     await page.getByTestId('agul-sidebar').getByText('Place an order for a pet').click();
     await expect(page.getByTestId('agul-form-view')).toBeVisible();
     await expect(page.getByLabel('Ship Date')).toBeVisible();

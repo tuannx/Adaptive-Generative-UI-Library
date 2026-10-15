@@ -54,6 +54,26 @@ export function parseOpenAPISync(spec: any): ParsedAPI {
 }
 
 /**
+ * Follow a local `$ref` (`#/components/responses/X`, `#/parameters/Y`, ...) to its target.
+ * Schema refs are left alone; `dereferenceSchema` handles those lazily.
+ */
+function resolveLocalRef(doc: any, value: any, hops = 0): any {
+  if (!value || typeof value !== 'object' || typeof value.$ref !== 'string' || hops > 10) {
+    return value;
+  }
+  const ref: string = value.$ref;
+  if (!ref.startsWith('#/')) return value;
+
+  const target = ref
+    .slice(2)
+    .split('/')
+    .map((segment) => segment.replace(/~1/g, '/').replace(/~0/g, '~'))
+    .reduce((node: any, key) => (node == null ? undefined : node[key]), doc);
+
+  return target === undefined ? value : resolveLocalRef(doc, target, hops + 1);
+}
+
+/**
  * Normalize Swagger 2.0 to OpenAPI 3.0 format
  */
 function normalizeSpec(spec: any): any {
@@ -109,11 +129,11 @@ function convertSwagger2to3(swagger2: any): any {
 
       // Convert parameters
       if (operation.parameters) {
-        newOperation.parameters = operation.parameters.filter(
-          (p: any) => p.in !== 'body'
-        );
+        const params = operation.parameters.map((p: any) => resolveLocalRef(swagger2, p));
+        newOperation.parameters = params.filter((p: any) => p.in !== 'body' && p.in !== 'formData');
 
-        const bodyParam = operation.parameters.find((p: any) => p.in === 'body');
+        const bodyParam = params.find((p: any) => p.in === 'body');
+        const formParams = params.filter((p: any) => p.in === 'formData');
         if (bodyParam) {
           newOperation.requestBody = {
             required: bodyParam.required,
@@ -123,12 +143,28 @@ function convertSwagger2to3(swagger2: any): any {
               }
             }
           };
+        } else if (formParams.length > 0) {
+          const consumes: string[] = operation.consumes ?? swagger2.consumes ?? [];
+          const mediaType = consumes.find((type) => type.includes('form')) ?? 'application/x-www-form-urlencoded';
+          newOperation.requestBody = {
+            content: {
+              [mediaType]: {
+                schema: {
+                  type: 'object',
+                  required: formParams.filter((p: any) => p.required).map((p: any) => p.name),
+                  properties: Object.fromEntries(
+                    formParams.map(({ name, in: _in, required: _required, ...rest }: any) => [name, rest]),
+                  ),
+                },
+              },
+            },
+          };
         }
       }
 
       // Convert responses
       Object.keys(operation.responses || {}).forEach(statusCode => {
-        const response = operation.responses[statusCode];
+        const response = resolveLocalRef(swagger2, operation.responses[statusCode]);
         newOperation.responses[statusCode] = {
           description: response.description || 'Response',
           content: response.schema ? {
@@ -204,13 +240,18 @@ function extractTags(spec: any): string[] {
 function parseEndpoints(spec: any): ParsedEndpoint[] {
   const endpoints: ParsedEndpoint[] = [];
 
-  Object.entries(spec.paths || {}).forEach(([path, pathItem]: [string, any]) => {
+  Object.entries(spec.paths || {}).forEach(([path, rawPathItem]: [string, any]) => {
+    const pathItem = resolveLocalRef(spec, rawPathItem) ?? {};
     const methods: HttpMethod[] = ['get', 'post', 'put', 'patch', 'delete'];
 
     methods.forEach(method => {
       if (pathItem[method]) {
         const operation = pathItem[method];
-        const parameters = mergeParameters(pathItem.parameters, operation.parameters);
+        const resolveAll = (params?: any[]) => params?.map((param) => resolveLocalRef(spec, param));
+        const parameters = mergeParameters(resolveAll(pathItem.parameters), resolveAll(operation.parameters));
+        const responses = Object.fromEntries(
+          Object.entries(operation.responses ?? {}).map(([code, response]) => [code, resolveLocalRef(spec, response)]),
+        );
 
         endpoints.push({
           path,
@@ -220,8 +261,8 @@ function parseEndpoints(spec: any): ParsedEndpoint[] {
           summary: operation.summary,
           description: operation.description,
           parameters,
-          requestBody: operation.requestBody as RequestBodyObject,
-          responses: operation.responses as Record<string, ResponseObject>,
+          requestBody: resolveLocalRef(spec, operation.requestBody) as RequestBodyObject,
+          responses: responses as Record<string, ResponseObject>,
           security: operation.security
         });
       }

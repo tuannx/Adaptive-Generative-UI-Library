@@ -1,12 +1,31 @@
 import React, { useState } from 'react';
-import { Layout, Menu, Typography, theme } from 'antd';
+import { Form, Input, Layout, Menu, Modal, Typography, theme } from 'antd';
 import { ApiOutlined } from '@ant-design/icons';
-import { useLocation } from 'react-router-dom';
+import { matchPath, useLocation } from 'react-router-dom';
 import type { MenuItem } from '@agul/core';
 import { useAgulNavigate, useAgulRuntime } from '../runtime.js';
+import { formatLabel } from './format.js';
 
 const { Header, Sider, Content } = Layout;
 const { Title, Text } = Typography;
+
+const PARAMS_STORAGE_KEY = 'agul:path-params';
+
+function readStoredParams(): Record<string, string> {
+  try {
+    return JSON.parse(localStorage.getItem(PARAMS_STORAGE_KEY) ?? '{}');
+  } catch {
+    return {};
+  }
+}
+
+function storeParams(values: Record<string, string>): void {
+  try {
+    localStorage.setItem(PARAMS_STORAGE_KEY, JSON.stringify({ ...readStoredParams(), ...values }));
+  } catch {
+    // storage unavailable (private mode); values are simply not remembered
+  }
+}
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -17,6 +36,8 @@ interface AppLayoutProps {
 
 export const AppLayout: React.FC<AppLayoutProps> = ({ children, menu, apiTitle = 'API Explorer', apiVersion }) => {
   const [collapsed, setCollapsed] = useState(false);
+  const [pending, setPending] = useState<MenuItem | null>(null);
+  const [paramForm] = Form.useForm<Record<string, string>>();
   const navigate = useAgulNavigate();
   const { routeBase } = useAgulRuntime();
   const location = useLocation();
@@ -24,20 +45,38 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, menu, apiTitle =
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
 
+  const items = React.useMemo(() => menu.flatMap((group) => group.children ?? []), [menu]);
   const currentPath = location.pathname.slice(routeBase.length) || '/';
-  const selectedKey =
-    menu
-      .flatMap((group) => group.children ?? [])
-      .map((item) => item.key)
-      .filter((key) => currentPath === key || currentPath.startsWith(`${key}/`))
-      .sort((a, b) => b.length - a.length)[0] ?? currentPath;
-  const openGroup = menu.find((group) => group.children?.some((item) => item.key === selectedKey))?.key;
+  const selected = items
+    .filter((item) => matchPath({ path: item.key, end: false }, currentPath))
+    .sort((a, b) => b.key.length - a.key.length)[0];
+  const openGroup = menu.find((group) => group.children?.includes(selected!))?.key;
+
+  const handleClick = (key: string) => {
+    const item = items.find((candidate) => candidate.key === key);
+    if (!item?.params?.length) {
+      navigate(key);
+      return;
+    }
+    setPending(item);
+  };
+
+  const submitParams = (values: Record<string, string>) => {
+    if (!pending) return;
+    storeParams(values);
+    const path = pending.key.replace(/:([^/]+)/g, (_, param: string) => encodeURIComponent(values[param].trim()));
+    setPending(null);
+    navigate(path);
+  };
 
   const menuItems = menu.map((group) => ({
     key: group.key,
     label: group.label,
     icon: <ApiOutlined />,
-    children: group.children?.map((item) => ({ key: item.key, label: item.label })),
+    children: group.children?.map((item) => ({
+      key: item.key,
+      label: item.params?.length ? <span title={item.key}>{item.label} …</span> : item.label,
+    })),
   }));
 
   return (
@@ -58,10 +97,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, menu, apiTitle =
         <Menu
           theme="dark"
           mode="inline"
-          selectedKeys={[selectedKey]}
-          defaultOpenKeys={openGroup ? [openGroup] : menu.map((group) => group.key)}
+          selectedKeys={selected ? [selected.key] : []}
+          defaultOpenKeys={openGroup ? [openGroup] : menu.slice(0, 1).map((group) => group.key)}
           items={menuItems}
-          onClick={({ key }) => navigate(key)}
+          onClick={({ key }) => handleClick(key)}
         />
       </Sider>
 
@@ -94,6 +133,36 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, menu, apiTitle =
           {children}
         </Content>
       </Layout>
+
+      <Modal
+        open={!!pending}
+        title={pending?.label}
+        okText="Open"
+        onOk={() => paramForm.submit()}
+        onCancel={() => setPending(null)}
+        destroyOnHidden
+        data-testid="agul-path-params"
+      >
+        <Text type="secondary">{pending?.key}</Text>
+        <Form
+          form={paramForm}
+          layout="vertical"
+          onFinish={submitParams}
+          initialValues={pending ? readStoredParams() : undefined}
+          style={{ marginTop: 16 }}
+        >
+          {pending?.params?.map((param) => (
+            <Form.Item
+              key={param}
+              name={param}
+              label={formatLabel(param)}
+              rules={[{ required: true, whitespace: true, message: `Please input ${formatLabel(param)}` }]}
+            >
+              <Input autoFocus={param === pending.params![0]} />
+            </Form.Item>
+          ))}
+        </Form>
+      </Modal>
     </Layout>
   );
 };

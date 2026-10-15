@@ -170,7 +170,7 @@ function AGULApp({
     );
   }
 
-  const defaultPath = state.menu[0]?.children?.[0]?.key;
+  const defaultPath = state.menu.flatMap((group) => group.children ?? []).find((item) => !item.params)?.key;
 
   return (
     <AgulRuntimeProvider value={runtime!}>
@@ -252,8 +252,9 @@ function useFetchedSpec(specUrl: string | undefined): FetchState {
     fetch(specUrl)
       .then((response) => {
         if (!response.ok) throw new Error(`Failed to fetch spec: ${response.status}`);
-        return response.json();
+        return response.text();
       })
+      .then(parseSpecText)
       .then((spec) => !cancelled && setState({ status: 'ready', url: specUrl, spec }))
       .catch((err) => !cancelled && setState({ status: 'error', error: err instanceof Error ? err : new Error(String(err)) }));
 
@@ -263,6 +264,16 @@ function useFetchedSpec(specUrl: string | undefined): FetchState {
   }, [specUrl]);
 
   return state.status === 'ready' && state.url !== specUrl ? { status: 'loading' } : state;
+}
+
+/** Parses a spec document as JSON, falling back to YAML (the parser is loaded only when needed). */
+export async function parseSpecText(text: string): Promise<Record<string, unknown>> {
+  const trimmed = text.trimStart();
+  if (trimmed.startsWith('{')) return JSON.parse(text);
+  const { load } = await import('js-yaml');
+  const doc = load(text);
+  if (!doc || typeof doc !== 'object') throw new Error('Spec is neither JSON nor a YAML mapping');
+  return doc as Record<string, unknown>;
 }
 
 export async function createAGULFromSpec(

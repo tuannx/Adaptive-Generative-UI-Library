@@ -52,9 +52,11 @@
     "swr": "^2.0.0"
   },
   "dependencies": {
-    "@agul/core": "0.1.0"
+    "@agul/core": "0.1.0",
+    "js-yaml": "^4.3.2"
   },
   "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
     "axios": "^1.13.2",

@@ -1,0 +1,20 @@
+# name  url — download into a directory, then: node scripts/measure-specs.mjs <dir>
+asana.yaml https://raw.githubusercontent.com/Asana/openapi/master/defs/asana_oas.yaml
+authentik.yaml https://raw.githubusercontent.com/goauthentik/authentik/main/schema.yml
+box.json https://raw.githubusercontent.com/box/box-openapi/main/openapi.json
+discourse.json https://raw.githubusercontent.com/discourse/discourse_api_docs/main/openapi.json
+gitea.json https://raw.githubusercontent.com/go-gitea/gitea/release/v1.22/templates/swagger/v1_json.tmpl
+github.json https://raw.githubusercontent.com/github/rest-api-description/main/descriptions/api.github.com/api.github.com.json
+immich.json https://raw.githubusercontent.com/immich-app/immich/main/open-api/immich-openapi-specs.json
+jira.yaml https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/atlassian.com/jira/1001.0.0-SNAPSHOT/openapi.yaml
+keycloak.yaml https://raw.githubusercontent.com/ccouzens/keycloak-openapi/master/keycloak/18.0.yml
+kubernetes.json https://raw.githubusercontent.com/kubernetes/kubernetes/master/api/openapi-spec/swagger.json
+netbox.json https://raw.githubusercontent.com/netbox-community/netbox/main/contrib/openapi.json
+openai.yaml https://raw.githubusercontent.com/openai/openai-openapi/manual_spec/openapi.yaml
+petstore-expanded.yaml https://raw.githubusercontent.com/OAI/learn.openapis.org/main/examples/v3.0/petstore-expanded.yaml
+petstore3.yaml https://raw.githubusercontent.com/swagger-api/swagger-petstore/master/src/main/resources/openapi.yaml
+realworld.yaml https://raw.githubusercontent.com/gothinkster/realworld/main/specs/api/openapi.yml
+spotify.yaml https://raw.githubusercontent.com/sonallux/spotify-web-api/main/fixed-spotify-open-api.yml
+stripe.json https://raw.githubusercontent.com/stripe/openapi/master/openapi/spec3.json
+twilio.json https://raw.githubusercontent.com/twilio/twilio-oai/main/spec/json/twilio_api_v2010.json
+vault.json https://raw.githubusercontent.com/hashicorp/vault-client-go/main/openapi.json

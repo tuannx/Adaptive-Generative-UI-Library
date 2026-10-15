@@ -92,6 +92,8 @@ export type ComponentType = 'list' | 'detail' | 'form' | 'create' | 'edit' | 'de
 export interface MenuItem {
   key: string;
   label: string;
+  /** Path params the user must supply before navigating (`key` then contains `:param` segments). */
+  params?: string[];
   children?: MenuItem[];
 }
 

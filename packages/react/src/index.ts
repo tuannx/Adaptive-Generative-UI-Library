@@ -1,4 +1,4 @@
-export { AGULRenderer, createAGULFromSpec, createAGULFromJsonSchema } from './AGULRenderer.js';
+export { AGULRenderer, createAGULFromSpec, createAGULFromJsonSchema, parseSpecText } from './AGULRenderer.js';
 export type { AGULRendererProps } from './AGULRenderer.js';
 
 export {

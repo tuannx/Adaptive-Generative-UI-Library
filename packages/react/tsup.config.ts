@@ -15,6 +15,7 @@ export default defineConfig({
     'axios',
     'swr',
     'dayjs',
+    'js-yaml',
     '@agul/core',
   ],
 });

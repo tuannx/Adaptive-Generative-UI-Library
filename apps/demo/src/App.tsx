@@ -6,29 +6,41 @@ import { useState } from 'react';
 import { Upload, Button, Input, message } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import type { UploadFile } from 'antd';
-import { AGULRenderer } from '@agul/react';
+import { AGULRenderer, parseSpecText } from '@agul/react';
 import { demoFieldPlugins } from './plugins/index.js';
 import './App.css';
 
-function readInitialToken(): string {
-  if (typeof window === 'undefined') {
-    return '';
-  }
+function readQueryParam(name: string): string | undefined {
+  if (typeof window === 'undefined') return undefined;
+  return new URLSearchParams(window.location.search).get(name) ?? undefined;
+}
 
-  return new URLSearchParams(window.location.search).get('token') ?? '';
+function rememberSpecUrl(url: string | undefined): void {
+  const params = new URLSearchParams(window.location.search);
+  if (url && !url.startsWith('/examples/')) params.set('spec', url);
+  else params.delete('spec');
+  const query = params.toString();
+  window.history.replaceState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}`);
 }
 
 function App() {
   const [spec, setSpec] = useState<Record<string, unknown> | undefined>(undefined);
-  const [specUrl, setSpecUrl] = useState<string | undefined>('/examples/petstore.json');
-  const [token, setToken] = useState(readInitialToken);
+  const [specUrl, setSpecUrlState] = useState<string | undefined>(
+    () => readQueryParam('spec') ?? '/examples/petstore.json',
+  );
+  const [token, setToken] = useState(() => readQueryParam('token') ?? '');
+
+  const setSpecUrl = (url: string | undefined) => {
+    rememberSpecUrl(url);
+    setSpecUrlState(url);
+  };
 
   const handleUpload = async (file: UploadFile) => {
     try {
       const text = await file.originFileObj?.text();
       if (!text) throw new Error('Failed to read file');
 
-      setSpec(JSON.parse(text));
+      setSpec(await parseSpecText(text));
       setSpecUrl(undefined);
       message.success('OpenAPI spec loaded');
     } catch (err) {
@@ -40,7 +52,20 @@ function App() {
   return (
     <div>
       <div className="demo-toolbar" data-testid="demo-toolbar">
-        <Upload beforeUpload={handleUpload} accept=".json" showUploadList={false}>
+        <Input.Search
+          placeholder="Paste OpenAPI spec URL (JSON or YAML)"
+          enterButton="Load"
+          allowClear
+          data-testid="demo-spec-url"
+          style={{ width: 380 }}
+          onSearch={(value) => {
+            const url = value.trim();
+            if (!url) return;
+            setSpec(undefined);
+            setSpecUrl(url);
+          }}
+        />
+        <Upload beforeUpload={handleUpload} accept=".json,.yaml,.yml" showUploadList={false}>
           <Button icon={<UploadOutlined />}>Upload OpenAPI Spec</Button>
         </Upload>
         <Button
