@@ -28,7 +28,7 @@ import { AppLayout } from './components/AppLayout.js';
 import { ListView } from './components/ListView.js';
 import { DetailView } from './components/DetailView.js';
 import { FormView } from './components/FormView.js';
-import { createAgulHttp, type GetAuthHeaders } from './http/client.js';
+import { createAgulHttp, withProxy, type GetAuthHeaders } from './http/client.js';
 import { PluginProvider } from './plugins/PluginContext.js';
 import type { AgulFieldPlugin } from './plugins/types.js';
 import { AgulRuntimeProvider, type AgulRuntime } from './runtime.js';
@@ -52,6 +52,11 @@ export interface AGULRendererProps {
   plugins?: AgulFieldPlugin[];
   /** Ant Design primary color */
   primaryColor?: string;
+  /**
+   * Prefix for a same-origin CORS proxy; absolute API and spec URLs are requested as
+   * `${proxyUrl}${url}` (e.g. `/proxy/`). See `apps/demo/worker` for a Cloudflare implementation.
+   */
+  proxyUrl?: string;
   /** Router basename when AGUL creates its own BrowserRouter (ignored inside a host router) */
   basename?: string;
   /** Called when spec processing fails */
@@ -87,21 +92,24 @@ function AGULApp({
   baseUrl,
   token,
   getAuthHeaders,
+  proxyUrl,
   plugins = [],
   onError,
   onReady,
   embedded,
 }: Omit<AGULRendererProps, 'basename' | 'primaryColor'> & { embedded: boolean }) {
   const routeBase = useMountPath(embedded);
+  const { search } = useLocation();
 
   const auth = useLatest({ token, getAuthHeaders });
-  const http = React.useMemo(() => createAgulHttp(() => auth.current), [auth]);
+  const proxy = useLatest(proxyUrl);
+  const http = React.useMemo(() => createAgulHttp(() => auth.current, () => proxy.current), [auth, proxy]);
   const onReadyRef = useLatest(onReady);
   const onErrorRef = useLatest(onError);
 
   const stableSpec = useStableValue(spec);
   const stableSchema = useStableValue(jsonSchema);
-  const fetched = useFetchedSpec(specUrl);
+  const fetched = useFetchedSpec(specUrl, proxyUrl);
 
   const state = React.useMemo<ModelState>(() => {
     try {
@@ -177,7 +185,7 @@ function AGULApp({
       <PluginProvider plugins={plugins}>
         <AppLayout menu={state.menu} apiTitle={state.api.title} apiVersion={state.api.version}>
           <Routes>
-            {defaultPath && <Route index element={<Navigate to={relative(defaultPath)} replace />} />}
+            {defaultPath && <Route index element={<Navigate to={{ pathname: relative(defaultPath), search }} replace />} />}
             {state.resources.flatMap((resource) => resourceRoutes(resource))}
             <Route
               path="*"
@@ -241,7 +249,7 @@ type FetchState =
   | { status: 'error'; error: Error }
   | { status: 'ready'; url: string; spec: Record<string, unknown> };
 
-function useFetchedSpec(specUrl: string | undefined): FetchState {
+function useFetchedSpec(specUrl: string | undefined, proxyUrl: string | undefined): FetchState {
   const [state, setState] = React.useState<FetchState>({ status: 'loading' });
 
   React.useEffect(() => {
@@ -249,7 +257,7 @@ function useFetchedSpec(specUrl: string | undefined): FetchState {
     let cancelled = false;
     setState({ status: 'loading' });
 
-    fetch(specUrl)
+    fetch(withProxy(specUrl, proxyUrl))
       .then((response) => {
         if (!response.ok) throw new Error(`Failed to fetch spec: ${response.status}`);
         return response.text();
@@ -261,7 +269,7 @@ function useFetchedSpec(specUrl: string | undefined): FetchState {
     return () => {
       cancelled = true;
     };
-  }, [specUrl]);
+  }, [specUrl, proxyUrl]);
 
   return state.status === 'ready' && state.url !== specUrl ? { status: 'loading' } : state;
 }

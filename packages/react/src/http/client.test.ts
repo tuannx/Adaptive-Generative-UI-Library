@@ -76,3 +76,18 @@ describe('agulHttp interceptor', () => {
     expect(requestConfig.headers.get('Authorization')).toBe('Bearer live-token');
   });
 });
+
+describe('withProxy', () => {
+  it('prefixes absolute cross-origin URLs', async () => {
+    const { withProxy } = await import('./client.js');
+    expect(withProxy('https://api.example.com/v1/items?x=1', '/proxy/')).toBe(
+      '/proxy/https://api.example.com/v1/items?x=1',
+    );
+  });
+
+  it('leaves relative URLs and a missing proxy alone', async () => {
+    const { withProxy } = await import('./client.js');
+    expect(withProxy('/api/items', '/proxy/')).toBe('/api/items');
+    expect(withProxy('https://api.example.com/items', undefined)).toBe('https://api.example.com/items');
+  });
+});

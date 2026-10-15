@@ -28,3 +28,7 @@ blob-report/
 *.njsproj
 *.sln
 *.sw?
+
+# Cloudflare
+.wrangler/
+.dev.vars

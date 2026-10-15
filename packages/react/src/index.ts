@@ -4,6 +4,7 @@ export type { AGULRendererProps } from './AGULRenderer.js';
 export {
   configureAgulAuth,
   createAgulHttp,
+  withProxy,
   agulHttp,
   agulFetcher,
   resolveAuthHeaders,

@@ -1,0 +1,18 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "agul-demo",
+  "main": "worker/index.ts",
+  "compatibility_date": "2025-09-01",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/proxy/*"]
+  },
+  "vars": {
+    // Hosts the /proxy/ route may forward to. Add your own API host here (or in the dashboard).
+    // "*" turns the Worker into an open proxy — don't do that on a public deployment.
+    "PROXY_ALLOWED_HOSTS": "petstore.swagger.io,petstore3.swagger.io,jsonplaceholder.typicode.com,raw.githubusercontent.com"
+  },
+  "observability": { "enabled": true }
+}

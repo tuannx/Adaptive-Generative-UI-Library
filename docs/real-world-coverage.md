@@ -43,9 +43,9 @@ node scripts/measure-specs.mjs /tmp/specs
 ## Known gaps
 
 - **CORS is unmeasured.** AGUL calls APIs from the browser; most public APIs (Stripe, Twilio, OpenAI) are
-  not meant to be called from a browser with a secret key. Point `baseUrl` at a same-origin proxy
-  (e.g. a Vite `server.proxy` entry or a small backend route) for those. Self-hosted backends that serve
-  their own spec (Authentik, NetBox, Immich, Keycloak — relative `servers[].url`) work as-is.
+  not meant to be called from a browser with a secret key. Use `proxyUrl` with a same-origin proxy — the
+  Cloudflare demo ships one (`apps/demo/worker`, host allowlist). Self-hosted backends that serve their own
+  spec (Authentik, NetBox, Immich, Keycloak — relative `servers[].url`) work as-is.
 - Keycloak lists: only 15 % get columns (schemas are deeper than the 3-hop inlining budget).
 - Vault and Spotify are mostly action/read-only APIs; low CRUD counts there are expected.
 - Arrays of objects are not editable in forms yet; nested objects are.

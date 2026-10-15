@@ -73,6 +73,29 @@ from a browser, set `baseUrl` to a same-origin proxy.
 
 The demo accepts `?spec=<url>` (or paste a URL in the toolbar) to try any spec.
 
+## Deploy the demo to Cloudflare
+
+`apps/demo` ships as a Cloudflare Worker: static SPA assets plus a same-origin CORS proxy at
+`/proxy/<absolute-url>` (`apps/demo/worker/`). In that build the demo routes API calls through the
+proxy (toggle "Proxy / Direct" in the toolbar); the library equivalent is `<AGULRenderer proxyUrl="/proxy/" />`.
+
+```bash
+# From your machine (opens a browser to log in once):
+npx wrangler login
+npm run build && npm run deploy --workspace=@agul/demo
+# → https://agul-demo.<your-subdomain>.workers.dev
+
+# Local check with the real Workers runtime:
+npm run build && npm run cf:dev --workspace=@agul/demo   # http://localhost:8787
+```
+
+Or from GitHub: copy `docs/github-workflows/deploy-demo.yml` to `.github/workflows/`, add repository
+secrets `CLOUDFLARE_API_TOKEN` (template "Edit Cloudflare Workers") and `CLOUDFLARE_ACCOUNT_ID`, then run
+**Actions → Deploy demo (Cloudflare) → Run workflow** (it also runs on every push to `main`).
+
+The proxy forwards only to hosts in `PROXY_ALLOWED_HOSTS` (`apps/demo/wrangler.jsonc`, or Settings →
+Variables in the Cloudflare dashboard). Add your own API's host there; never set it to `*` on a public URL.
+
 ## MCP Server (Agents)
 
 ```bash

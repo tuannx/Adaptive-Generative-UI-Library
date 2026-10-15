@@ -44,10 +44,29 @@ export async function applyAuthHeaders(
   return config;
 }
 
-/** Creates an axios instance whose auth headers are read from `getAuth()` on every request. */
-export function createAgulHttp(getAuth: () => AgulAuthConfig): AxiosInstance {
+/**
+ * Route an absolute URL through a proxy that takes the target URL as its path suffix
+ * (`/proxy/` + `https://api.example.com/items` → `/proxy/https://api.example.com/items`).
+ * Relative and same-origin URLs are left alone.
+ */
+export function withProxy(url: string, proxyUrl: string | undefined): string {
+  if (!proxyUrl || !/^https?:\/\//i.test(url)) return url;
+  if (typeof window !== 'undefined' && url.startsWith(`${window.location.origin}/`)) return url;
+  return `${proxyUrl}${url}`;
+}
+
+/**
+ * Creates an axios instance whose auth headers (and optional proxy) are read on every request.
+ */
+export function createAgulHttp(
+  getAuth: () => AgulAuthConfig,
+  getProxyUrl: () => string | undefined = () => undefined,
+): AxiosInstance {
   const instance = axios.create();
-  instance.interceptors.request.use((config) => applyAuthHeaders(config, getAuth()));
+  instance.interceptors.request.use((config) => {
+    if (config.url) config.url = withProxy(config.url, getProxyUrl());
+    return applyAuthHeaders(config, getAuth());
+  });
   return instance;
 }
 

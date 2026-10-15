@@ -1,6 +1,6 @@
 import React from 'react';
 import type { AxiosInstance } from 'axios';
-import { useNavigate, type NavigateOptions } from 'react-router-dom';
+import { useLocation, useNavigate, type NavigateOptions } from 'react-router-dom';
 import { useSWRConfig } from 'swr';
 import { buildApiUrl, type Resource, type SchemaObject } from '@agul/core';
 import { agulHttp } from './http/client.js';
@@ -31,16 +31,20 @@ export function useAgulFetcher() {
   return React.useCallback((url: string) => http.get(url).then((res) => res.data), [http]);
 }
 
-/** `navigate()` for generated paths, prefixed with the mount point when AGUL is nested in a host router. */
+/**
+ * `navigate()` for generated paths, prefixed with the mount point when AGUL is nested in a host router.
+ * The current query string is kept: AGUL doesn't use it, the host page may (e.g. `?spec=`, `?tenant=`).
+ */
 export function useAgulNavigate() {
   const navigate = useNavigate();
+  const { search } = useLocation();
   const { routeBase } = useAgulRuntime();
   return React.useCallback(
     (to: string | number, options?: NavigateOptions) => {
       if (typeof to === 'number') navigate(to);
-      else navigate(`${routeBase}${to}`, options);
+      else navigate({ pathname: `${routeBase}${to}`, search }, options);
     },
-    [navigate, routeBase],
+    [navigate, routeBase, search],
   );
 }
 

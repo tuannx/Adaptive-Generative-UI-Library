@@ -3,12 +3,14 @@
  */
 
 import { useState } from 'react';
-import { Upload, Button, Input, message } from 'antd';
+import { Upload, Button, Input, Switch, Tooltip, message } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import type { UploadFile } from 'antd';
 import { AGULRenderer, parseSpecText } from '@agul/react';
 import { demoFieldPlugins } from './plugins/index.js';
 import './App.css';
+
+const PROXY_PREFIX = import.meta.env.VITE_AGUL_PROXY;
 
 function readQueryParam(name: string): string | undefined {
   if (typeof window === 'undefined') return undefined;
@@ -29,6 +31,7 @@ function App() {
     () => readQueryParam('spec') ?? '/examples/petstore.json',
   );
   const [token, setToken] = useState(() => readQueryParam('token') ?? '');
+  const [useProxy, setUseProxy] = useState(() => !!PROXY_PREFIX && readQueryParam('proxy') !== '0');
 
   const setSpecUrl = (url: string | undefined) => {
     rememberSpecUrl(url);
@@ -100,12 +103,26 @@ function App() {
           onChange={(event) => setToken(event.target.value)}
           style={{ width: 220 }}
         />
+        {PROXY_PREFIX && (
+          <Tooltip title="Send API calls through this site's /proxy/ route (for APIs without CORS). Only hosts allowed in the Worker's PROXY_ALLOWED_HOSTS are forwarded.">
+            <span>
+              <Switch
+                checked={useProxy}
+                onChange={setUseProxy}
+                data-testid="demo-use-proxy"
+                checkedChildren="Proxy"
+                unCheckedChildren="Direct"
+              />
+            </span>
+          </Tooltip>
+        )}
       </div>
 
       <AGULRenderer
         spec={spec}
         specUrl={specUrl}
         token={token || undefined}
+        proxyUrl={useProxy ? PROXY_PREFIX : undefined}
         plugins={demoFieldPlugins}
       />
     </div>
