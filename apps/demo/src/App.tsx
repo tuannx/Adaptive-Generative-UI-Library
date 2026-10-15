@@ -2,11 +2,11 @@
  * AGUL Demo App - showcases @agul/react library
  */
 
-import { useState, useLayoutEffect } from 'react';
+import { useState } from 'react';
 import { Upload, Button, Input, message } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import type { UploadFile } from 'antd';
-import { AGULRenderer, configureAgulAuth } from '@agul/react';
+import { AGULRenderer } from '@agul/react';
 import { demoFieldPlugins } from './plugins/index.js';
 import './App.css';
 
@@ -22,10 +22,6 @@ function App() {
   const [spec, setSpec] = useState<Record<string, unknown> | undefined>(undefined);
   const [specUrl, setSpecUrl] = useState<string | undefined>('/examples/petstore.json');
   const [token, setToken] = useState(readInitialToken);
-
-  useLayoutEffect(() => {
-    configureAgulAuth({ token: token || undefined });
-  }, [token]);
 
   const handleUpload = async (file: UploadFile) => {
     try {

@@ -10,17 +10,20 @@ export interface AgulAuthConfig {
 
 let authConfig: AgulAuthConfig = {};
 
+/** Configures auth for the shared `agulHttp` client. `<AGULRenderer>` uses its own `token`/`getAuthHeaders` props. */
 export function configureAgulAuth(config: AgulAuthConfig): void {
   authConfig = config;
 }
 
-export async function resolveAuthHeaders(): Promise<Record<string, string>> {
-  if (authConfig.getAuthHeaders) {
-    return authConfig.getAuthHeaders();
+export async function resolveAuthHeaders(
+  config: AgulAuthConfig = authConfig,
+): Promise<Record<string, string>> {
+  if (config.getAuthHeaders) {
+    return config.getAuthHeaders();
   }
 
-  if (authConfig.token) {
-    return { Authorization: `Bearer ${authConfig.token}` };
+  if (config.token) {
+    return { Authorization: `Bearer ${config.token}` };
   }
 
   return {};
@@ -28,8 +31,9 @@ export async function resolveAuthHeaders(): Promise<Record<string, string>> {
 
 export async function applyAuthHeaders(
   config: InternalAxiosRequestConfig,
+  auth: AgulAuthConfig = authConfig,
 ): Promise<InternalAxiosRequestConfig> {
-  const authHeaders = await resolveAuthHeaders();
+  const authHeaders = await resolveAuthHeaders(auth);
   const headers = AxiosHeaders.from(config.headers);
 
   for (const [key, value] of Object.entries(authHeaders)) {
@@ -40,8 +44,13 @@ export async function applyAuthHeaders(
   return config;
 }
 
-export const agulHttp: AxiosInstance = axios.create();
+/** Creates an axios instance whose auth headers are read from `getAuth()` on every request. */
+export function createAgulHttp(getAuth: () => AgulAuthConfig): AxiosInstance {
+  const instance = axios.create();
+  instance.interceptors.request.use((config) => applyAuthHeaders(config, getAuth()));
+  return instance;
+}
 
-agulHttp.interceptors.request.use(applyAuthHeaders);
+export const agulHttp: AxiosInstance = createAgulHttp(() => authConfig);
 
 export const agulFetcher = (url: string) => agulHttp.get(url).then((res) => res.data);

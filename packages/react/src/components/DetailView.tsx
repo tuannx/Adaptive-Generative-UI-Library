@@ -1,134 +1,73 @@
-/**
- * DetailView Component - Displays a single resource detail
- */
-
 import React from 'react';
-import { Card, Descriptions, Button, Space, message, Popconfirm, Spin, Alert } from 'antd';
+import { Card, Descriptions, Button, Space, message, Popconfirm, Spin, Alert, Tag } from 'antd';
 import { EditOutlined, DeleteOutlined, ArrowLeftOutlined } from '@ant-design/icons';
-import { useNavigate, useParams } from 'react-router-dom';
-import useSWR, { mutate } from 'swr';
-import { agulHttp, agulFetcher } from '../http/client.js';
-import type { RouteConfig } from '@agul/core';
-import { routesShareResource } from '@agul/core';
+import { useParams } from 'react-router-dom';
+import useSWR from 'swr';
+import { buildApiUrl, buildPathParamsFromRecord, buildRouterPath, type Resource } from '@agul/core';
+import { useAgulFetcher, useAgulNavigate, useAgulRuntime, useRevalidateList } from '../runtime.js';
+import { formatLabel, isHttpUrl, isImageUrl, unwrapRecord } from './format.js';
 
 interface DetailViewProps {
-  route: RouteConfig;
-  baseUrl: string;
-  allRoutes: RouteConfig[];
+  resource: Resource;
 }
 
-const fetcher = agulFetcher;
-
-export const DetailView: React.FC<DetailViewProps> = ({ route, baseUrl, allRoutes }) => {
-  const navigate = useNavigate();
+export const DetailView: React.FC<DetailViewProps> = ({ resource }) => {
+  const detail = resource.detail!;
+  const { baseUrl, http } = useAgulRuntime();
+  const fetcher = useAgulFetcher();
+  const navigate = useAgulNavigate();
+  const revalidate = useRevalidateList(resource);
   const params = useParams();
 
-  // Build API URL with path parameters
-  let apiUrl = `${baseUrl}${route.apiEndpoint}`;
-  Object.entries(params).forEach(([key, value]) => {
-    apiUrl = apiUrl.replace(`{${key}}`, value || '');
-  });
-
+  const apiUrl = buildApiUrl(baseUrl, detail.apiEndpoint, params);
   const { data, error, isLoading } = useSWR(apiUrl, fetcher);
+  const record = unwrapRecord(data) as Record<string, unknown> | undefined;
 
-  // Find related routes
-  const editRoute = allRoutes.find(r =>
-    r.component === 'edit' &&
-    routesShareResource(r.apiEndpoint, route.apiEndpoint)
-  );
-
-  const deleteEndpoint = allRoutes.find(r =>
-    r.method === 'delete' &&
-    routesShareResource(r.apiEndpoint, route.apiEndpoint)
-  );
-
-  const listRoute = allRoutes.find(r =>
-    r.component === 'list' &&
-    routesShareResource(route.apiEndpoint, r.apiEndpoint)
-  );
-
-  const handleEdit = () => {
-    if (!editRoute) return;
-
-    let path = editRoute.path;
-    Object.entries(params).forEach(([key, value]) => {
-      path = path.replace(`:${key}`, value || '');
-    });
-
-    navigate(path);
+  const handleBack = () => {
+    if (resource.paths.list) navigate(buildRouterPath(resource.paths.list, params));
+    else navigate(-1);
   };
 
   const handleDelete = async () => {
-    if (!deleteEndpoint) {
-      message.error('Delete operation not available');
-      return;
-    }
-
+    const remove = resource.remove!;
     try {
-      await agulHttp.delete(apiUrl);
+      const pathParams = { ...buildPathParamsFromRecord(remove.apiEndpoint, record ?? {}), ...params };
+      await http.delete(buildApiUrl(baseUrl, remove.apiEndpoint, pathParams));
       message.success('Deleted successfully');
-
-      if (listRoute) {
-        await mutate(`${baseUrl}${listRoute.apiEndpoint}`);
-      }
-
-      // Navigate back to list
-      if (listRoute) {
-        navigate(listRoute.path);
-      } else {
-        navigate(-1);
-      }
-    } catch (err: any) {
-      message.error(`Delete failed: ${err.message}`);
+      await revalidate();
+      handleBack();
+    } catch (err) {
+      message.error(`Delete failed: ${err instanceof Error ? err.message : String(err)}`);
     }
   };
 
-  const handleBack = () => {
-    if (listRoute) {
-      navigate(listRoute.path);
-    } else {
-      navigate(-1);
-    }
-  };
-
-  // Render loading state
+  let body: React.ReactNode;
   if (isLoading) {
-    return (
-      <Card>
-        <div style={{ textAlign: 'center', padding: '50px' }}>
-          <Spin size="large" />
-        </div>
-      </Card>
+    body = (
+      <div style={{ textAlign: 'center', padding: 50 }}>
+        <Spin size="large" />
+      </div>
     );
-  }
-
-  // Render error state
-  if (error) {
-    return (
-      <Card>
-        <Alert
-          message="Error"
-          description={`Failed to load data: ${error.message}`}
-          type="error"
-          showIcon
-        />
-      </Card>
+  } else if (error) {
+    body = (
+      <Alert
+        type="error"
+        showIcon
+        message="Failed to load data"
+        description={error instanceof Error ? error.message : String(error)}
+      />
     );
-  }
-
-  // Get actual data object
-  const detailData = data?.data || data;
-
-  if (!detailData) {
-    return (
-      <Card>
-        <Alert
-          message="No Data"
-          description="No data found for this resource"
-          type="warning"
-          showIcon
-        />
-      </Card>
+  } else if (!record || typeof record !== 'object') {
+    body = <Alert type="warning" showIcon message="No data found for this resource" />;
+  } else {
+    body = (
+      <Descriptions bordered column={1}>
+        {Object.entries(record).map(([key, value]) => (
+          <Descriptions.Item key={key} label={formatLabel(key)}>
+            {renderValue(value, key)}
+          </Descriptions.Item>
+        ))}
+      </Descriptions>
     );
   }
 
@@ -137,138 +76,75 @@ export const DetailView: React.FC<DetailViewProps> = ({ route, baseUrl, allRoute
       data-testid="agul-detail-view"
       title={
         <Space>
-          <Button
-            type="text"
-            icon={<ArrowLeftOutlined />}
-            onClick={handleBack}
-            data-testid="agul-detail-back"
-          />
-          {route.summary || 'Detail View'}
+          {(resource.paths.list || resource.idParam) && (
+            <Button
+              type="text"
+              icon={<ArrowLeftOutlined />}
+              onClick={handleBack}
+              data-testid="agul-detail-back"
+            />
+          )}
+          {detail.summary ?? resource.label}
         </Space>
       }
       extra={
-        <Space>
-          {editRoute && (
-            <Button
-              type="primary"
-              icon={<EditOutlined />}
-              onClick={handleEdit}
-            >
-              Edit
-            </Button>
-          )}
-          {deleteEndpoint && (
-            <Popconfirm
-              title="Are you sure you want to delete this item?"
-              onConfirm={handleDelete}
-              okText="Yes"
-              cancelText="No"
-            >
+        record && (
+          <Space>
+            {resource.paths.edit && (
               <Button
-                danger
-                icon={<DeleteOutlined />}
+                type="primary"
+                icon={<EditOutlined />}
+                onClick={() => navigate(buildRouterPath(resource.paths.edit!, params), { state: { record } })}
               >
-                Delete
+                Edit
               </Button>
-            </Popconfirm>
-          )}
-        </Space>
+            )}
+            {resource.remove && (
+              <Popconfirm
+                title="Are you sure you want to delete this item?"
+                onConfirm={handleDelete}
+                okText="Yes"
+                cancelText="No"
+              >
+                <Button danger icon={<DeleteOutlined />}>
+                  Delete
+                </Button>
+              </Popconfirm>
+            )}
+          </Space>
+        )
       }
     >
-      <Descriptions bordered column={1}>
-        {renderDescriptionItems(detailData)}
-      </Descriptions>
+      {body}
     </Card>
   );
 };
 
-/**
- * Render description items from data object
- */
-function renderDescriptionItems(data: any, prefix = ''): React.ReactNode[] {
-  const items: React.ReactNode[] = [];
-
-  Object.entries(data).forEach(([key, value]) => {
-    const fullKey = prefix ? `${prefix}.${key}` : key;
-    const label = formatLabel(key);
-
-    if (value === null || value === undefined) {
-      items.push(
-        <Descriptions.Item key={fullKey} label={label}>
-          <span style={{ color: '#999' }}>-</span>
-        </Descriptions.Item>
-      );
-    } else if (typeof value === 'object' && !Array.isArray(value)) {
-      // Nested object - render as JSON for now
-      items.push(
-        <Descriptions.Item key={fullKey} label={label}>
-          <pre style={{ margin: 0, fontSize: '12px' }}>
-            {JSON.stringify(value, null, 2)}
-          </pre>
-        </Descriptions.Item>
-      );
-    } else if (Array.isArray(value)) {
-      // Array - render as JSON
-      items.push(
-        <Descriptions.Item key={fullKey} label={label}>
-          <pre style={{ margin: 0, fontSize: '12px' }}>
-            {JSON.stringify(value, null, 2)}
-          </pre>
-        </Descriptions.Item>
-      );
-    } else if (typeof value === 'boolean') {
-      items.push(
-        <Descriptions.Item key={fullKey} label={label}>
-          {value ? 'Yes' : 'No'}
-        </Descriptions.Item>
-      );
-    } else if (typeof value === 'string' && isUrl(value)) {
-      items.push(
-        <Descriptions.Item key={fullKey} label={label}>
-          <a href={value} target="_blank" rel="noopener noreferrer">
-            {value}
-          </a>
-        </Descriptions.Item>
-      );
-    } else if (typeof value === 'string' && isImageUrl(value)) {
-      items.push(
-        <Descriptions.Item key={fullKey} label={label}>
-          <img
-            src={value}
-            alt={key}
-            style={{ maxWidth: '200px', maxHeight: '200px' }}
-          />
-        </Descriptions.Item>
-      );
-    } else {
-      items.push(
-        <Descriptions.Item key={fullKey} label={label}>
-          {String(value)}
-        </Descriptions.Item>
+function renderValue(value: unknown, key: string): React.ReactNode {
+  if (value === null || value === undefined || value === '') {
+    return <span style={{ color: '#999' }}>-</span>;
+  }
+  if (typeof value === 'boolean') {
+    return value ? 'Yes' : 'No';
+  }
+  if (typeof value === 'string') {
+    if (isImageUrl(value)) {
+      return <img src={value} alt={key} style={{ maxWidth: 200, maxHeight: 200 }} />;
+    }
+    if (isHttpUrl(value)) {
+      return (
+        <a href={value} target="_blank" rel="noopener noreferrer">
+          {value}
+        </a>
       );
     }
-  });
-
-  return items;
-}
-
-function formatLabel(key: string): string {
-  return key
-    .replace(/([A-Z])/g, ' $1')
-    .replace(/^./, str => str.toUpperCase())
-    .replace(/_/g, ' ')
-    .trim();
-}
-
-function isUrl(str: string): boolean {
-  try {
-    new URL(str);
-    return true;
-  } catch {
-    return false;
+    return value;
   }
-}
-
-function isImageUrl(str: string): boolean {
-  return /\.(jpg|jpeg|png|gif|bmp|svg|webp)$/i.test(str);
+  if (Array.isArray(value) && value.every((item) => typeof item !== 'object' || item === null)) {
+    return value.map((item, index) => <Tag key={index}>{String(item)}</Tag>);
+  }
+  if (typeof value === 'object') {
+    return <pre style={{ margin: 0, fontSize: 12 }}>{JSON.stringify(value, null, 2)}</pre>;
+  }
+  return String(value);
 }

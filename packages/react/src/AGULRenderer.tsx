@@ -1,29 +1,37 @@
-/**
- * AGULRenderer - Public API for Agent/library consumers
- * Renders a full CRUD admin UI from an OpenAPI specification
- */
-
-import { useState, useEffect, useLayoutEffect, useCallback } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { ConfigProvider, Spin, Alert, message } from 'antd';
+import React from 'react';
 import {
-  parseOpenAPI,
-  parseJsonSchema,
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+  useInRouterContext,
+  useLocation,
+  useParams,
+} from 'react-router-dom';
+import { Alert, ConfigProvider, Spin, message } from 'antd';
+import {
+  buildMenu,
+  buildResources,
   generateRoutes,
-  groupRoutesByTag,
-  generateMenu,
+  parseOpenAPI,
+  parseOpenAPISync,
+  parseJsonSchema,
+  wrapJsonSchemaAsOpenAPI,
+  type JsonSchemaInputOptions,
+  type MenuItem,
   type ParsedAPI,
+  type Resource,
   type RouteConfig,
   type SchemaObject,
-  type JsonSchemaInputOptions,
 } from '@agul/core';
 import { AppLayout } from './components/AppLayout.js';
 import { ListView } from './components/ListView.js';
 import { DetailView } from './components/DetailView.js';
 import { FormView } from './components/FormView.js';
-import { configureAgulAuth, type GetAuthHeaders } from './http/client.js';
+import { createAgulHttp, type GetAuthHeaders } from './http/client.js';
 import { PluginProvider } from './plugins/PluginContext.js';
 import type { AgulFieldPlugin } from './plugins/types.js';
+import { AgulRuntimeProvider, type AgulRuntime } from './runtime.js';
 
 export interface AGULRendererProps {
   /** OpenAPI/Swagger spec object */
@@ -44,13 +52,34 @@ export interface AGULRendererProps {
   plugins?: AgulFieldPlugin[];
   /** Ant Design primary color */
   primaryColor?: string;
+  /** Router basename when AGUL creates its own BrowserRouter (ignored inside a host router) */
+  basename?: string;
   /** Called when spec processing fails */
   onError?: (error: Error) => void;
   /** Called when spec is loaded and routes are ready */
   onReady?: (api: ParsedAPI, routes: RouteConfig[]) => void;
 }
 
-export function AGULRenderer({
+interface AgulModel {
+  api: ParsedAPI;
+  resources: Resource[];
+  menu: MenuItem[];
+}
+
+type ModelState = { status: 'loading' } | { status: 'error'; error: Error } | ({ status: 'ready' } & AgulModel);
+
+export function AGULRenderer({ basename, primaryColor = '#1890ff', ...props }: AGULRendererProps) {
+  const inRouter = useInRouterContext();
+  const app = (
+    <ConfigProvider theme={{ token: { colorPrimary: primaryColor } }}>
+      <AGULApp {...props} embedded={inRouter} />
+    </ConfigProvider>
+  );
+
+  return inRouter ? app : <BrowserRouter basename={basename}>{app}</BrowserRouter>;
+}
+
+function AGULApp({
   spec,
   specUrl,
   jsonSchema,
@@ -59,141 +88,77 @@ export function AGULRenderer({
   token,
   getAuthHeaders,
   plugins = [],
-  primaryColor = '#1890ff',
   onError,
   onReady,
-}: AGULRendererProps) {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [parsedAPI, setParsedAPI] = useState<ParsedAPI | null>(null);
-  const [routes, setRoutes] = useState<RouteConfig[]>([]);
-  const [menu, setMenu] = useState<ReturnType<typeof generateMenu>>([]);
+  embedded,
+}: Omit<AGULRendererProps, 'basename' | 'primaryColor'> & { embedded: boolean }) {
+  const routeBase = useMountPath(embedded);
 
-  useLayoutEffect(() => {
-    configureAgulAuth({ token, getAuthHeaders });
-  }, [token, getAuthHeaders]);
+  const auth = useLatest({ token, getAuthHeaders });
+  const http = React.useMemo(() => createAgulHttp(() => auth.current), [auth]);
+  const onReadyRef = useLatest(onReady);
+  const onErrorRef = useLatest(onError);
 
-  const applyParsedApi = useCallback(
-    (parsed: ParsedAPI) => {
-      const generatedRoutes = generateRoutes(parsed);
-      const grouped = groupRoutesByTag(generatedRoutes);
-      const generatedMenu = generateMenu(grouped);
+  const stableSpec = useStableValue(spec);
+  const stableSchema = useStableValue(jsonSchema);
+  const fetched = useFetchedSpec(specUrl);
 
-      setParsedAPI(parsed);
-      setRoutes(generatedRoutes);
-      setMenu(generatedMenu);
-      onReady?.(parsed, generatedRoutes);
-    },
-    [onReady],
-  );
+  const state = React.useMemo<ModelState>(() => {
+    try {
+      const inputs = [stableSpec, specUrl, stableSchema].filter(Boolean).length;
+      if (inputs !== 1) throw new Error('Provide exactly one of spec, specUrl, or jsonSchema');
 
-  const processSpec = useCallback(
-    async (specData: Record<string, unknown>) => {
-      const parsed = await parseOpenAPI(specData);
-      if (baseUrl) {
-        parsed.baseUrl = baseUrl;
+      let api: ParsedAPI;
+      if (stableSchema) {
+        if (!baseUrl) throw new Error('baseUrl is required when using jsonSchema');
+        api = parseOpenAPISync(wrapJsonSchemaAsOpenAPI(stableSchema, { baseUrl, resourcePath }));
+      } else if (stableSpec) {
+        api = parseOpenAPISync(stableSpec);
+      } else {
+        if (fetched.status !== 'ready') return fetched;
+        api = parseOpenAPISync(fetched.spec);
+        api.baseUrl = resolveAgainst(api.baseUrl, fetched.url);
       }
-      applyParsedApi(parsed);
-    },
-    [baseUrl, applyParsedApi],
-  );
 
-  const processJsonSchema = useCallback(
-    async (schema: SchemaObject, schemaOptions: JsonSchemaInputOptions) => {
-      const parsed = await parseJsonSchema(schema, schemaOptions);
-      applyParsedApi(parsed);
-    },
-    [applyParsedApi],
-  );
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const inputCount = [spec, specUrl, jsonSchema].filter(Boolean).length;
-        if (inputCount !== 1) {
-          throw new Error('Provide exactly one of spec, specUrl, or jsonSchema');
-        }
-
-        if (jsonSchema) {
-          if (!baseUrl) {
-            throw new Error('baseUrl is required when using jsonSchema');
-          }
-
-          if (!cancelled) {
-            await processJsonSchema(jsonSchema, {
-              baseUrl,
-              resourcePath,
-            });
-          }
-          return;
-        }
-
-        let specData = spec;
-        if (!specData && specUrl) {
-          const response = await fetch(specUrl);
-          if (!response.ok) {
-            throw new Error(`Failed to fetch spec: ${response.status}`);
-          }
-          specData = await response.json();
-        }
-
-        if (!specData) {
-          throw new Error('Either spec or specUrl is required');
-        }
-
-        if (!cancelled) {
-          await processSpec(specData);
-        }
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : String(err);
-        if (!cancelled) {
-          setError(errorMessage);
-          onError?.(err instanceof Error ? err : new Error(errorMessage));
-          message.error(errorMessage);
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
+      if (baseUrl) api.baseUrl = baseUrl;
+      const resources = buildResources(api);
+      return { status: 'ready', api, resources, menu: buildMenu(resources) };
+    } catch (err) {
+      return { status: 'error', error: err instanceof Error ? err : new Error(String(err)) };
     }
+  }, [stableSpec, stableSchema, specUrl, fetched, baseUrl, resourcePath]);
 
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [spec, specUrl, jsonSchema, resourcePath, baseUrl, processSpec, processJsonSchema, onError]);
+  React.useEffect(() => {
+    if (state.status === 'ready') {
+      onReadyRef.current?.(state.api, generateRoutes(state.api));
+    } else if (state.status === 'error') {
+      onErrorRef.current?.(state.error);
+      message.error(state.error.message);
+    }
+  }, [state, onReadyRef, onErrorRef]);
 
-  if (loading) {
+  const runtime = React.useMemo<AgulRuntime | null>(
+    () =>
+      state.status === 'ready'
+        ? { baseUrl: state.api.baseUrl, schemas: state.api.schemas, http, routeBase }
+        : null,
+    [state, http, routeBase],
+  );
+
+  if (state.status === 'loading') {
     return (
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '100vh',
-          flexDirection: 'column',
-          gap: 16,
-        }}
-      >
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: 64 }}>
         <Spin size="large" />
         <div data-testid="agul-loading">Loading OpenAPI specification...</div>
       </div>
     );
   }
 
-  if (error) {
-    return (
-      <Alert message="Error" description={error} type="error" showIcon style={{ margin: 24 }} />
-    );
+  if (state.status === 'error') {
+    return <Alert message="Error" description={state.error.message} type="error" showIcon style={{ margin: 24 }} />;
   }
 
-  if (!parsedAPI || routes.length === 0) {
+  if (state.resources.length === 0) {
     return (
       <Alert
         message="No Routes Found"
@@ -205,78 +170,118 @@ export function AGULRenderer({
     );
   }
 
-  const firstListRoute = routes.find((r) => r.component === 'list');
-  const defaultPath = firstListRoute?.path || '/';
+  const defaultPath = state.menu[0]?.children?.[0]?.key;
 
   return (
-    <ConfigProvider theme={{ token: { colorPrimary: primaryColor } }}>
+    <AgulRuntimeProvider value={runtime!}>
       <PluginProvider plugins={plugins}>
-        <BrowserRouter>
-          <AppLayout menu={menu} apiTitle={parsedAPI.basePath} apiVersion="1.0">
-            <Routes>
-              <Route path="/" element={<Navigate to={defaultPath} replace />} />
-              {routes
-                .filter((route) => route.component !== 'delete')
-                .map((route) => (
-                <Route
-                  key={route.operationId}
-                  path={route.path}
-                  element={
-                    route.component === 'list' ? (
-                      <ListView route={route} baseUrl={parsedAPI.baseUrl} allRoutes={routes} />
-                    ) : route.component === 'detail' ? (
-                      <DetailView route={route} baseUrl={parsedAPI.baseUrl} allRoutes={routes} />
-                    ) : (
-                      <FormView
-                        route={route}
-                        baseUrl={parsedAPI.baseUrl}
-                        allRoutes={routes}
-                        schemas={parsedAPI.schemas}
-                      />
-                    )
-                  }
-                />
-              ))}
-              <Route
-                path="*"
-                element={
-                  <Alert
-                    message="404 Not Found"
-                    description="The page you are looking for does not exist"
-                    type="warning"
-                    showIcon
-                  />
-                }
-              />
-            </Routes>
-          </AppLayout>
-        </BrowserRouter>
+        <AppLayout menu={state.menu} apiTitle={state.api.title} apiVersion={state.api.version}>
+          <Routes>
+            {defaultPath && <Route index element={<Navigate to={relative(defaultPath)} replace />} />}
+            {state.resources.flatMap((resource) => resourceRoutes(resource))}
+            <Route
+              path="*"
+              element={<Alert message="404 Not Found" description="The page you are looking for does not exist" type="warning" showIcon />}
+            />
+          </Routes>
+        </AppLayout>
       </PluginProvider>
-    </ConfigProvider>
+    </AgulRuntimeProvider>
   );
+}
+
+function resourceRoutes(resource: Resource): React.ReactElement[] {
+  const { paths, key } = resource;
+  const routes: React.ReactElement[] = [];
+
+  if (paths.list) routes.push(<Route key={`${key}:list`} path={relative(paths.list)} element={<ListView resource={resource} />} />);
+  if (paths.create) routes.push(<Route key={`${key}:create`} path={relative(paths.create)} element={<FormView key="create" resource={resource} mode="create" />} />);
+  if (paths.detail) routes.push(<Route key={`${key}:detail`} path={relative(paths.detail)} element={<DetailView resource={resource} />} />);
+  if (paths.edit) routes.push(<Route key={`${key}:edit`} path={relative(paths.edit)} element={<FormView key="edit" resource={resource} mode="edit" />} />);
+
+  return routes;
+}
+
+/** Pathname of the host `<Route path="/x/*">` AGUL is mounted in ('' when AGUL owns the router). */
+function useMountPath(embedded: boolean): string {
+  const { pathname } = useLocation();
+  const splat = useParams()['*'];
+  if (!embedded || splat === undefined) return '';
+  return pathname.slice(0, pathname.length - splat.length).replace(/\/+$/, '');
+}
+
+function relative(path: string): string {
+  return path.replace(/^\/+/, '');
+}
+
+function resolveAgainst(url: string, specUrl: string): string {
+  if (/^[a-z][a-z\d+.-]*:\/\//i.test(url) || typeof window === 'undefined') return url;
+  return new URL(url || '.', new URL(specUrl, window.location.href)).toString().replace(/\/+$/, '');
+}
+
+function useLatest<T>(value: T): React.RefObject<T> {
+  const ref = React.useRef(value);
+  React.useLayoutEffect(() => {
+    ref.current = value;
+  });
+  return ref;
+}
+
+/** Keeps the previous reference while the value is structurally equal, so inline literals don't re-trigger parsing. */
+function useStableValue<T>(value: T): T {
+  const ref = React.useRef(value);
+  if (value !== ref.current && JSON.stringify(value) !== JSON.stringify(ref.current)) {
+    ref.current = value;
+  }
+  return ref.current;
+}
+
+type FetchState =
+  | { status: 'loading' }
+  | { status: 'error'; error: Error }
+  | { status: 'ready'; url: string; spec: Record<string, unknown> };
+
+function useFetchedSpec(specUrl: string | undefined): FetchState {
+  const [state, setState] = React.useState<FetchState>({ status: 'loading' });
+
+  React.useEffect(() => {
+    if (!specUrl) return;
+    let cancelled = false;
+    setState({ status: 'loading' });
+
+    fetch(specUrl)
+      .then((response) => {
+        if (!response.ok) throw new Error(`Failed to fetch spec: ${response.status}`);
+        return response.json();
+      })
+      .then((spec) => !cancelled && setState({ status: 'ready', url: specUrl, spec }))
+      .catch((err) => !cancelled && setState({ status: 'error', error: err instanceof Error ? err : new Error(String(err)) }));
+
+    return () => {
+      cancelled = true;
+    };
+  }, [specUrl]);
+
+  return state.status === 'ready' && state.url !== specUrl ? { status: 'loading' } : state;
 }
 
 export async function createAGULFromSpec(
   spec: Record<string, unknown>,
   options?: { baseUrl?: string },
-): Promise<{ api: ParsedAPI; routes: RouteConfig[]; menu: ReturnType<typeof generateMenu> }> {
-  const parsed = await parseOpenAPI(spec);
-  if (options?.baseUrl) {
-    parsed.baseUrl = options.baseUrl;
-  }
-  const routes = generateRoutes(parsed);
-  const grouped = groupRoutesByTag(routes);
-  const menu = generateMenu(grouped);
-  return { api: parsed, routes, menu };
+): Promise<{ api: ParsedAPI; routes: RouteConfig[]; menu: MenuItem[]; resources: Resource[] }> {
+  const api = await parseOpenAPI(spec);
+  if (options?.baseUrl) api.baseUrl = options.baseUrl;
+  return describeApi(api);
 }
 
 export async function createAGULFromJsonSchema(
   schema: SchemaObject,
   options: JsonSchemaInputOptions,
-): Promise<{ api: ParsedAPI; routes: RouteConfig[]; menu: ReturnType<typeof generateMenu> }> {
-  const parsed = await parseJsonSchema(schema, options);
-  const routes = generateRoutes(parsed);
-  const grouped = groupRoutesByTag(routes);
-  const menu = generateMenu(grouped);
-  return { api: parsed, routes, menu };
+): Promise<{ api: ParsedAPI; routes: RouteConfig[]; menu: MenuItem[]; resources: Resource[] }> {
+  return describeApi(await parseJsonSchema(schema, options));
+}
+
+function describeApi(api: ParsedAPI) {
+  const resources = buildResources(api);
+  return { api, routes: generateRoutes(api), menu: buildMenu(resources), resources };
 }

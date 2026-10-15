@@ -3,139 +3,45 @@
  */
 
 import type {
+  ComponentType,
   ParsedAPI,
-  ParsedEndpoint,
   RouteConfig,
   GroupedRoutes,
   MenuItem
-} from './types';
-import { getResponseSchema, getRequestSchema } from './parser';
+} from './types.js';
+import { buildResources, type ResourceOperation } from './resources.js';
 
 /**
- * Generate React Router routes from parsed API
+ * Generate React Router routes from parsed API (one per generated page, plus delete operations).
  */
 export function generateRoutes(parsed: ParsedAPI): RouteConfig[] {
   const routes: RouteConfig[] = [];
 
-  parsed.endpoints.forEach(endpoint => {
-    const generatedRoutes = generateRoutesForEndpoint(endpoint, parsed);
-    routes.push(...generatedRoutes);
-  });
-
-  return routes;
-}
-
-/**
- * Generate routes for a single endpoint
- */
-function generateRoutesForEndpoint(
-  endpoint: ParsedEndpoint,
-  _parsed: ParsedAPI
-): RouteConfig[] {
-  const routes: RouteConfig[] = [];
-  const { path, method, operationId, tags, summary, description, parameters, requestBody, responses } = endpoint;
-
-  // Convert OpenAPI path to React Router path
-  // /pet/{petId} -> /pet/:petId
-  const routerPath = convertPathToRouterFormat(path);
-
-  // Determine component type based on method and path
-  const hasPathParam = path.includes('{');
-
-  switch (method) {
-    case 'get':
-      if (hasPathParam) {
-        // GET /resource/{id} -> DetailView
-        routes.push({
-          path: routerPath,
-          component: 'detail',
-          apiEndpoint: path,
-          method,
-          schema: getResponseSchema(responses) || undefined,
-          summary,
-          description,
-          parameters,
-          tag: tags?.[0] || 'default',
-          operationId
-        });
-      } else {
-        // GET /resource -> ListView
-        routes.push({
-          path: routerPath,
-          component: 'list',
-          apiEndpoint: path,
-          method,
-          schema: getResponseSchema(responses) || undefined,
-          summary,
-          description,
-          parameters,
-          tag: tags?.[0] || 'default',
-          operationId
-        });
-      }
-      break;
-
-    case 'post':
-      // POST /resource -> Create Form
+  for (const resource of buildResources(parsed)) {
+    const add = (operation: ResourceOperation | undefined, component: ComponentType, path?: string) => {
+      if (!operation || !path) return;
       routes.push({
-        path: `${routerPath}/new`,
-        component: 'create',
-        apiEndpoint: path,
-        method,
-        schema: getRequestSchema(requestBody) || undefined,
-        summary,
-        description,
-        parameters,
-        requestBody,
-        tag: tags?.[0] || 'default',
-        operationId
+        path,
+        component,
+        apiEndpoint: operation.apiEndpoint,
+        method: operation.method,
+        schema: component === 'list' ? resource.recordSchema : operation.schema,
+        summary: operation.summary,
+        description: operation.description,
+        parameters: operation.parameters,
+        tag: resource.tag,
+        operationId: operation.operationId,
       });
-      break;
+    };
 
-    case 'put':
-    case 'patch':
-      // PUT /resource/{id} -> Edit Form
-      routes.push({
-        path: `${routerPath}/edit`,
-        component: 'edit',
-        apiEndpoint: path,
-        method,
-        schema: getRequestSchema(requestBody) || undefined,
-        summary,
-        description,
-        parameters,
-        requestBody,
-        tag: tags?.[0] || 'default',
-        operationId
-      });
-      break;
-
-    case 'delete':
-      if (hasPathParam) {
-        routes.push({
-          path: routerPath,
-          component: 'delete',
-          apiEndpoint: path,
-          method,
-          summary,
-          description,
-          parameters,
-          tag: tags?.[0] || 'default',
-          operationId,
-        });
-      }
-      break;
+    add(resource.list, 'list', resource.paths.list);
+    add(resource.detail, 'detail', resource.paths.detail);
+    add(resource.create, 'create', resource.paths.create);
+    add(resource.update, 'edit', resource.paths.edit);
+    add(resource.remove, 'delete', resource.paths.detail ?? resource.paths.list);
   }
 
   return routes;
-}
-
-/**
- * Convert OpenAPI path format to React Router format
- * /pet/{petId} -> /pet/:petId
- */
-function convertPathToRouterFormat(path: string): string {
-  return path.replace(/\{([^}]+)\}/g, ':$1');
 }
 
 /**
@@ -163,7 +69,7 @@ export function generateMenu(grouped: GroupedRoutes): MenuItem[] {
 
   Object.entries(grouped).forEach(([tag, routes]) => {
     // Get unique base paths (list views only)
-    const listRoutes = routes.filter(r => r.component === 'list');
+    const listRoutes = routes.filter(r => r.component === 'list' && !r.path.includes(':'));
 
     if (listRoutes.length === 0) {
       return;
@@ -286,23 +192,33 @@ export function buildPathParamsFromRecord(
 }
 
 /**
+ * Join a base URL and an API path without dropping the base path
+ * (`new URL('/pet', 'https://host/v2')` would yield `https://host/pet`).
+ */
+export function joinUrl(baseUrl: string, path: string): string {
+  if (!baseUrl) return path;
+  return `${baseUrl.replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`;
+}
+
+/**
+ * Substitute `{param}` placeholders, URL-encoding each value.
+ */
+export function fillPathParams(apiEndpoint: string, pathParams: Record<string, string | undefined>): string {
+  return apiEndpoint.replace(/\{([^}]+)\}/g, (placeholder, name: string) => {
+    const value = pathParams[name];
+    return value === undefined ? placeholder : encodeURIComponent(value);
+  });
+}
+
+/**
  * Build API URL with path parameters
  */
 export function buildApiUrl(
   baseUrl: string,
   apiEndpoint: string,
-  pathParams: Record<string, string>
+  pathParams: Record<string, string | undefined> = {}
 ): string {
-  let url = apiEndpoint;
-
-  // Replace {param} with actual values
-  Object.entries(pathParams).forEach(([key, value]) => {
-    url = url.replace(`{${key}}`, encodeURIComponent(value));
-  });
-
-  // Combine with base URL
-  const fullUrl = new URL(url, baseUrl).toString();
-  return fullUrl;
+  return joinUrl(baseUrl, fillPathParams(apiEndpoint, pathParams));
 }
 
 /**

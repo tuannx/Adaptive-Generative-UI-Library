@@ -3,6 +3,7 @@ export type { AGULRendererProps } from './AGULRenderer.js';
 
 export {
   configureAgulAuth,
+  createAgulHttp,
   agulHttp,
   agulFetcher,
   resolveAuthHeaders,
@@ -19,6 +20,15 @@ export type {
   AgulWizardStep,
 } from './plugins/types.js';
 
+export {
+  AgulRuntimeProvider,
+  useAgulRuntime,
+  useAgulFetcher,
+  useAgulNavigate,
+  useRevalidateList,
+} from './runtime.js';
+export type { AgulRuntime } from './runtime.js';
+
 export { AppLayout } from './components/AppLayout.js';
 export { ListView } from './components/ListView.js';
 export { DetailView } from './components/DetailView.js';
@@ -26,6 +36,7 @@ export { FormView } from './components/FormView.js';
 
 export {
   parseOpenAPI,
+  parseOpenAPISync,
   parseJsonSchema,
   wrapJsonSchemaAsOpenAPI,
   generateRoutes,
@@ -38,6 +49,10 @@ export {
   resolveRef,
   getResponseSchema,
   getRequestSchema,
+  buildResources,
+  buildMenu,
+  dereferenceSchema,
+  joinUrl,
   parseListQueryBindings,
   withFallbackPagination,
   getDefaultListQueryState,
@@ -56,4 +71,7 @@ export type {
   JsonSchemaInputOptions,
   ListQueryParamBinding,
   ListQueryState,
+  Resource,
+  ResourceOperation,
+  ResourcePaths,
 } from '@agul/core';

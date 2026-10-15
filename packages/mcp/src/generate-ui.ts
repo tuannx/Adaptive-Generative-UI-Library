@@ -2,8 +2,9 @@ import {
   parseOpenAPI,
   parseJsonSchema,
   generateRoutes,
-  groupRoutesByTag,
-  generateMenu,
+  buildResources,
+  buildMenu,
+  type MenuItem,
   type ParsedAPI,
   type RouteConfig,
   type SchemaObject,
@@ -16,9 +17,16 @@ export interface GenerateUIOptions {
 
 export interface GeneratedUIConfig {
   baseUrl: string;
-  api: Pick<ParsedAPI, 'baseUrl' | 'basePath' | 'tags'>;
+  api: Pick<ParsedAPI, 'title' | 'version' | 'baseUrl' | 'basePath' | 'tags'>;
   routeCount: number;
-  menu: ReturnType<typeof generateMenu>;
+  menu: MenuItem[];
+  resources: Array<{
+    key: string;
+    label: string;
+    tag: string;
+    operations: string[];
+    fields: string[];
+  }>;
   routes: Array<{
     path: string;
     component: string;
@@ -48,18 +56,26 @@ function buildGeneratedUIConfig(
   embedReact: string,
   previewBaseUrl?: string,
 ): GeneratedUIConfig {
-  const grouped = groupRoutesByTag(routes);
-  const menu = generateMenu(grouped);
+  const resources = buildResources(parsed);
 
   return {
     baseUrl: parsed.baseUrl,
     api: {
+      title: parsed.title,
+      version: parsed.version,
       baseUrl: parsed.baseUrl,
       basePath: parsed.basePath,
       tags: parsed.tags,
     },
     routeCount: routes.length,
-    menu,
+    menu: buildMenu(resources),
+    resources: resources.map((resource) => ({
+      key: resource.key,
+      label: resource.label,
+      tag: resource.tag,
+      operations: (['list', 'detail', 'create', 'update', 'remove'] as const).filter((op) => resource[op]),
+      fields: Object.keys(resource.recordSchema?.properties ?? {}),
+    })),
     routes: routes.map((route: RouteConfig) => ({
       path: route.path,
       component: route.component,
@@ -69,7 +85,7 @@ function buildGeneratedUIConfig(
     })),
     embed: {
       react: embedReact,
-      install: 'npm install @agul/react antd axios swr react-router-dom',
+      install: 'npm install @agul/react antd @ant-design/icons axios dayjs swr react-router-dom',
     },
     previewUrl: previewBaseUrl
       ? `${previewBaseUrl.replace(/\/$/, '')}/`

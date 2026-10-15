@@ -14,6 +14,7 @@ export default defineConfig({
     '@ant-design/icons',
     'axios',
     'swr',
+    'dayjs',
     '@agul/core',
   ],
 });

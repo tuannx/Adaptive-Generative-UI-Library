@@ -3,6 +3,8 @@
  */
 
 export interface ParsedAPI {
+  title: string;
+  version?: string;
   basePath: string;
   baseUrl: string;
   endpoints: ParsedEndpoint[];
@@ -63,6 +65,8 @@ export interface SchemaObject {
   allOf?: SchemaObject[];
   oneOf?: SchemaObject[];
   anyOf?: SchemaObject[];
+  readOnly?: boolean;
+  [extension: `x-${string}`]: unknown;
 }
 
 export interface SecurityRequirement {

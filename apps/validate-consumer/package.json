@@ -9,8 +9,10 @@
   },
   "dependencies": {
     "@agul/react": "0.1.0",
+    "@ant-design/icons": "^5.6.1",
     "antd": "^5.28.1",
     "axios": "^1.13.2",
+    "dayjs": "^1.11.13",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.9.5",

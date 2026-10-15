@@ -24,7 +24,7 @@ test.describe('AGUL Demo — CRUD flow', () => {
     // List → Edit → List
     await page.getByTestId('agul-action-edit-1').click();
     await expect(page.getByTestId('agul-form-view')).toBeVisible();
-    await page.getByLabel('Name').fill('Fluffy Updated');
+    await page.getByLabel('Name', { exact: true }).fill('Fluffy Updated');
     const editPhotoUrls = page.locator('.ant-form-item').filter({ hasText: 'Photo Urls' }).locator('input');
     if (await editPhotoUrls.count()) {
       await editPhotoUrls.fill('https://example.com/fluffy.jpg');
@@ -38,7 +38,7 @@ test.describe('AGUL Demo — CRUD flow', () => {
     await page.getByTestId('agul-list-view').getByRole('button', { name: 'Create New' }).click();
     await expect(page.getByTestId('agul-form-view')).toBeVisible();
 
-    await page.getByLabel('Name').fill('Buddy');
+    await page.getByLabel('Name', { exact: true }).fill('Buddy');
     const photoUrlsField = page.locator('.ant-form-item').filter({ hasText: 'Photo Urls' }).locator('input');
     if (await photoUrlsField.count()) {
       await photoUrlsField.fill('https://example.com/buddy.jpg');
@@ -97,5 +97,25 @@ test.describe('AGUL Demo — CRUD flow', () => {
     await page.getByTestId('agul-list-search').fill('Snow');
     await expect(page.getByTestId('agul-list-table')).toContainText('Snowball');
     await expect(page.getByTestId('agul-list-table')).not.toContainText('Fluffy');
+  });
+});
+
+test.describe('AGUL Demo — resource model', () => {
+  test.beforeEach(async ({ page }) => {
+    await setupPetstoreMock(page);
+  });
+
+  test('edit page deep link prefills from the detail endpoint', async ({ page }) => {
+    await page.goto('/pet/findByStatus/1/edit');
+    await expect(page.getByTestId('agul-form-view')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByLabel('Name', { exact: true })).toHaveValue('Fluffy');
+    await expect(page.getByLabel('Category name')).toHaveValue('Dogs');
+  });
+
+  test('create-only resources are reachable from the menu', async ({ page }) => {
+    await waitForAgulReady(page);
+    await page.getByTestId('agul-sidebar').getByText('Place an order for a pet').click();
+    await expect(page.getByTestId('agul-form-view')).toBeVisible();
+    await expect(page.getByLabel('Ship Date')).toBeVisible();
   });
 });

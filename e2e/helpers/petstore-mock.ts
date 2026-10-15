@@ -29,6 +29,11 @@ export async function setupPetstoreMock(
     }
 
     const method = route.request().method();
+    if (!new URL(url).pathname.startsWith('/v2/')) {
+      await route.fulfill({ status: 404, contentType: 'application/json', body: '{"message":"missing /v2 base path"}' });
+      return;
+    }
+
     options?.onRequest?.({
       authorization: route.request().headers()['authorization'],
       method,

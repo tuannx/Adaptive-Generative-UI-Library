@@ -29,7 +29,7 @@ test.describe('AGUL Demo — plugins and wizard', () => {
     await expect(page.getByTestId('agul-form-wizard')).toContainText('Media');
     await expect(page.getByTestId('agul-form-wizard')).toContainText('Notes');
 
-    await page.getByLabel('Name').fill('Plugin Pet');
+    await page.getByLabel('Name', { exact: true }).fill('Plugin Pet');
     await page.locator('.ant-form-item').filter({ hasText: 'Status' }).locator('.ant-select').click();
     await page.locator('.ant-select-dropdown:visible .ant-select-item-option').filter({ hasText: 'available' }).click();
 

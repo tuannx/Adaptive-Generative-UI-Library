@@ -1,4 +1,5 @@
 import type { ParameterObject, SchemaObject } from './types.js';
+import { buildApiUrl } from './generator.js';
 
 export type ListQueryRole = 'page' | 'limit' | 'offset' | 'search' | 'filter';
 
@@ -146,7 +147,7 @@ export function buildListApiUrl(
   apiEndpoint: string,
   bindings: ListQueryParamBinding[],
   state: ListQueryState,
+  pathParams: Record<string, string | undefined> = {},
 ): string {
-  const query = buildListQueryString(bindings, state);
-  return `${baseUrl}${apiEndpoint}${query}`;
+  return `${buildApiUrl(baseUrl, apiEndpoint, pathParams)}${buildListQueryString(bindings, state)}`;
 }

@@ -98,6 +98,8 @@ const config = await generateUIFromOpenAPI(spec);
 - TypeScript 7 strict, `verbatimModuleSyntax`
 - Packages use `.js` extensions in imports
 - `@agul/core` has zero React dependency
+- CRUD wiring lives in `buildResources` (`packages/core/src/resources.ts`); views receive a `Resource`, never re-derive relations from paths
+- Build API URLs with `buildApiUrl`/`joinUrl` (never `new URL(path, base)`, it drops the server base path)
 - Components use Ant Design + SWR + axios
 - No comments unless non-obvious business logic
 

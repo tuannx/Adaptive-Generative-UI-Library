@@ -10,13 +10,23 @@ import type {
   ParameterObject,
   RequestBodyObject,
   ResponseObject
-} from './types';
+} from './types.js';
 
 /**
  * Parse OpenAPI 3.0 or Swagger 2.0 specification
  */
 export async function parseOpenAPI(spec: any): Promise<ParsedAPI> {
-  // Normalize spec version
+  return parseOpenAPISync(spec);
+}
+
+export function parseOpenAPISync(spec: any): ParsedAPI {
+  if (!spec || typeof spec !== 'object' || (!spec.openapi && !spec.swagger)) {
+    throw new Error('Not an OpenAPI document: expected an "openapi" or "swagger" field');
+  }
+  if (!spec.paths || typeof spec.paths !== 'object') {
+    throw new Error('OpenAPI document has no "paths"');
+  }
+
   const normalized = normalizeSpec(spec);
 
   // Extract base URL
@@ -33,6 +43,8 @@ export async function parseOpenAPI(spec: any): Promise<ParsedAPI> {
   const schemas = extractSchemas(normalized);
 
   return {
+    title: normalized.info?.title ?? 'API',
+    version: normalized.info?.version,
     basePath,
     baseUrl,
     endpoints,
@@ -86,6 +98,10 @@ function convertSwagger2to3(swagger2: any): any {
 
     Object.keys(swagger2.paths[path]).forEach(method => {
       const operation = swagger2.paths[path][method];
+      if (method === 'parameters') {
+        openapi3.paths[path].parameters = operation;
+        return;
+      }
       const newOperation: any = {
         ...operation,
         responses: {}
@@ -134,25 +150,27 @@ function convertSwagger2to3(swagger2: any): any {
  * Extract base URL from spec
  */
 function extractBaseUrl(spec: any): string {
-  if (spec.servers && spec.servers.length > 0) {
-    return spec.servers[0].url;
+  const server = spec.servers?.[0];
+  if (!server?.url) {
+    return '';
   }
-  return 'http://localhost:3000';
+
+  const url = String(server.url).replace(/\{([^}]+)\}/g, (_: string, name: string) =>
+    String(server.variables?.[name]?.default ?? ''),
+  );
+  return url.replace(/\/+$/, '');
 }
 
 /**
  * Extract base path from spec
  */
 function extractBasePath(spec: any): string {
-  if (spec.servers && spec.servers.length > 0) {
-    try {
-      const url = new URL(spec.servers[0].url);
-      return url.pathname;
-    } catch {
-      return '/';
-    }
+  const url = extractBaseUrl(spec);
+  try {
+    return new URL(url, 'http://placeholder').pathname;
+  } catch {
+    return '/';
   }
-  return spec.basePath || '/';
 }
 
 /**
@@ -192,6 +210,7 @@ function parseEndpoints(spec: any): ParsedEndpoint[] {
     methods.forEach(method => {
       if (pathItem[method]) {
         const operation = pathItem[method];
+        const parameters = mergeParameters(pathItem.parameters, operation.parameters);
 
         endpoints.push({
           path,
@@ -200,7 +219,7 @@ function parseEndpoints(spec: any): ParsedEndpoint[] {
           tags: operation.tags || ['default'],
           summary: operation.summary,
           description: operation.description,
-          parameters: operation.parameters as ParameterObject[],
+          parameters,
           requestBody: operation.requestBody as RequestBodyObject,
           responses: operation.responses as Record<string, ResponseObject>,
           security: operation.security
@@ -210,6 +229,16 @@ function parseEndpoints(spec: any): ParsedEndpoint[] {
   });
 
   return endpoints;
+}
+
+function mergeParameters(pathLevel?: ParameterObject[], operationLevel?: ParameterObject[]): ParameterObject[] | undefined {
+  if (!pathLevel?.length) return operationLevel;
+
+  const byKey = new Map<string, ParameterObject>();
+  for (const param of [...pathLevel, ...(operationLevel ?? [])]) {
+    byKey.set(`${param.in}:${param.name}`, param);
+  }
+  return [...byKey.values()];
 }
 
 /**
@@ -250,7 +279,9 @@ export function getResponseSchema(
   responses: Record<string, ResponseObject>,
   statusCode = '200'
 ): SchemaObject | null {
-  const response = responses[statusCode] || responses['default'];
+  const successCode = Object.keys(responses).find((code) => /^2\d\d$/.test(code));
+  const response =
+    responses[statusCode] || (successCode && responses[successCode]) || responses['default'];
   if (!response || !response.content) {
     return null;
   }

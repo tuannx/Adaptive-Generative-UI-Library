@@ -1,5 +1,7 @@
 export * from './types.js';
 export * from './parser.js';
 export * from './generator.js';
+export * from './resources.js';
+export * from './schema.js';
 export * from './json-schema.js';
 export * from './list-query.js';

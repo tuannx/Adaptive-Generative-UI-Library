@@ -11,7 +11,7 @@ npm install @agul/react
 `@agul/react` includes `@agul/core` as a dependency. Peer dependencies (install in your app):
 
 ```bash
-npm install react react-dom antd axios swr react-router-dom
+npm install react react-dom antd @ant-design/icons axios dayjs swr react-router-dom
 ```
 
 ## Quick Start
@@ -34,13 +34,36 @@ import { AGULRenderer } from '@agul/react';
 <AGULRenderer specUrl="/openapi.json" baseUrl="https://api.example.com" />
 ```
 
+Inside an existing router, mount it under a splat route — AGUL detects the host router and links stay under `/admin`:
+
+```tsx
+<Route path="/admin/*" element={<AGULRenderer spec={openApiJson} token={jwt} />} />
+```
+
 Or programmatic:
 
 ```ts
 import { createAGULFromSpec } from '@agul/react';
 
-const { api, routes, menu } = await createAGULFromSpec(openApiJson);
+const { api, resources, routes, menu } = await createAGULFromSpec(openApiJson);
 ```
+
+## How It Works
+
+`@agul/core` turns the spec into **resources** (`buildResources`): endpoints are grouped by collection path, and each
+resource carries its `list` / `detail` / `create` / `update` / `remove` operations plus a fully dereferenced record schema.
+
+| Spec | Generated page |
+|------|----------------|
+| `GET /pets` (array response) | list at `/pets` |
+| `GET /pets/{id}` | detail at `/pets/:id`, edit form prefilled from it at `/pets/:id/edit` |
+| `POST /pets` | create form at `/pets/new` |
+| `PUT\|PATCH /pets/{id}` (or body-only `PUT /pets`) | submit target of the edit form |
+| `DELETE /pets/{id}` | delete actions in list and detail |
+| `GET /store/inventory` (object response) | key/value singleton page |
+
+A list like `GET /pet/findByStatus` with no item endpoints of its own borrows them from its parent (`/pet/{petId}`)
+when both return the same schema, which is how Swagger Petstore gets full CRUD.
 
 ## MCP Server (Agents)
 
