@@ -2,15 +2,17 @@
  * AGUL Demo App - showcases @agul/react library
  */
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Upload, Button, Input, Switch, Tooltip, message } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import type { UploadFile } from 'antd';
-import { AGULRenderer, parseSpecText } from '@agul/react';
+import { AGULRenderer, createHttpDecisionProvider, parseSpecText } from '@agul/react';
 import { demoFieldPlugins } from './plugins/index.js';
 import './App.css';
 
 const PROXY_PREFIX = import.meta.env.VITE_AGUL_PROXY;
+const DECIDE_URL = readQueryParam('decide') ?? import.meta.env.VITE_AGUL_DECIDE;
+const DEFAULT_SPEC = '/examples/petstore.json';
 
 function readQueryParam(name: string): string | undefined {
   if (typeof window === 'undefined') return undefined;
@@ -19,7 +21,7 @@ function readQueryParam(name: string): string | undefined {
 
 function rememberSpecUrl(url: string | undefined): void {
   const params = new URLSearchParams(window.location.search);
-  if (url && !url.startsWith('/examples/')) params.set('spec', url);
+  if (url && url !== DEFAULT_SPEC) params.set('spec', url);
   else params.delete('spec');
   const query = params.toString();
   window.history.replaceState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}`);
@@ -28,10 +30,15 @@ function rememberSpecUrl(url: string | undefined): void {
 function App() {
   const [spec, setSpec] = useState<Record<string, unknown> | undefined>(undefined);
   const [specUrl, setSpecUrlState] = useState<string | undefined>(
-    () => readQueryParam('spec') ?? '/examples/petstore.json',
+    () => readQueryParam('spec') ?? DEFAULT_SPEC,
   );
   const [token, setToken] = useState(() => readQueryParam('token') ?? '');
   const [useProxy, setUseProxy] = useState(() => !!PROXY_PREFIX && readQueryParam('proxy') !== '0');
+  const [aiLayout, setAiLayout] = useState(() => !!DECIDE_URL && readQueryParam('ai') !== '0');
+  const decisionProvider = useMemo(
+    () => (aiLayout && DECIDE_URL ? createHttpDecisionProvider({ url: DECIDE_URL }) : undefined),
+    [aiLayout],
+  );
 
   const setSpecUrl = (url: string | undefined) => {
     rememberSpecUrl(url);
@@ -96,6 +103,12 @@ function App() {
         >
           JSONPlaceholder
         </Button>
+        <Button data-testid="demo-load-tarot" onClick={() => {
+          setSpec(undefined);
+          setSpecUrl('/examples/tarot-chat.json');
+        }}>
+          Tarot Chat
+        </Button>
         <Input.Password
           placeholder="Bearer token (mock)"
           value={token}
@@ -103,6 +116,19 @@ function App() {
           onChange={(event) => setToken(event.target.value)}
           style={{ width: 220 }}
         />
+        {DECIDE_URL && (
+          <Tooltip title="Let the decision API (an LLM behind the Worker's /decide route) choose how each endpoint is shown: CRUD, action, chat or hidden.">
+            <span>
+              <Switch
+                checked={aiLayout}
+                onChange={setAiLayout}
+                data-testid="demo-ai-layout"
+                checkedChildren="AI layout"
+                unCheckedChildren="Rules"
+              />
+            </span>
+          </Tooltip>
+        )}
         {PROXY_PREFIX && (
           <Tooltip title="Send API calls through this site's /proxy/ route (for APIs without CORS). Only hosts allowed in the Worker's PROXY_ALLOWED_HOSTS are forwarded.">
             <span>
@@ -123,6 +149,7 @@ function App() {
         specUrl={specUrl}
         token={token || undefined}
         proxyUrl={useProxy ? PROXY_PREFIX : undefined}
+        decisionProvider={decisionProvider}
         plugins={demoFieldPlugins}
       />
     </div>

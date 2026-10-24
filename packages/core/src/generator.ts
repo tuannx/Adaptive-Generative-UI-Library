@@ -9,15 +9,16 @@ import type {
   GroupedRoutes,
   MenuItem
 } from './types.js';
-import { buildResources, type ResourceOperation } from './resources.js';
+import type { ResourceOperation } from './resources.js';
+import { planUi, type UiPlan } from './decisions.js';
 
 /**
  * Generate React Router routes from parsed API (one per generated page, plus delete operations).
  */
-export function generateRoutes(parsed: ParsedAPI): RouteConfig[] {
+export function generateRoutes(parsed: ParsedAPI, plan: UiPlan = planUi(parsed)): RouteConfig[] {
   const routes: RouteConfig[] = [];
 
-  for (const resource of buildResources(parsed)) {
+  for (const resource of plan.resources) {
     const add = (operation: ResourceOperation | undefined, component: ComponentType, path?: string) => {
       if (!operation || !path) return;
       routes.push({
@@ -39,6 +40,21 @@ export function generateRoutes(parsed: ParsedAPI): RouteConfig[] {
     add(resource.create, 'create', resource.paths.create);
     add(resource.update, 'edit', resource.paths.edit);
     add(resource.remove, 'delete', resource.paths.detail ?? resource.paths.list);
+  }
+
+  for (const page of plan.pages) {
+    routes.push({
+      path: page.path,
+      component: page.kind,
+      apiEndpoint: page.apiEndpoint,
+      method: page.method,
+      schema: page.body,
+      summary: page.label,
+      description: page.description,
+      parameters: page.parameters,
+      tag: page.group,
+      operationId: page.operationId,
+    });
   }
 
   return routes;

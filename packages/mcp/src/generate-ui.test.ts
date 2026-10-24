@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { generateUIFromOpenAPI, generateUIFromJsonSchema } from './generate-ui.js';
 
+const Pet = { type: 'object', properties: { id: { type: 'integer' }, name: { type: 'string' } } };
+const ok = (schema: object) => ({ '200': { description: 'OK', content: { 'application/json': { schema } } } });
+
 const petstoreSpec = {
   openapi: '3.0.0',
   info: { title: 'Petstore', version: '1.0.0' },
@@ -11,12 +14,13 @@ const petstoreSpec = {
         operationId: 'findPets',
         tags: ['pet'],
         summary: 'Find pets',
-        responses: { '200': { description: 'OK' } },
+        responses: ok({ type: 'array', items: Pet }),
       },
       post: {
         operationId: 'addPet',
         tags: ['pet'],
-        responses: { '200': { description: 'OK' } },
+        requestBody: { content: { 'application/json': { schema: Pet } } },
+        responses: ok(Pet),
       },
     },
     '/pet/{petId}': {
@@ -24,7 +28,7 @@ const petstoreSpec = {
         operationId: 'getPet',
         tags: ['pet'],
         parameters: [{ name: 'petId', in: 'path', required: true, schema: { type: 'integer' } }],
-        responses: { '200': { description: 'OK' } },
+        responses: ok(Pet),
       },
     },
   },
@@ -81,5 +85,42 @@ describe('generateUIFromJsonSchema', () => {
     expect(result.routes.some((route) => route.component === 'list')).toBe(true);
     expect(result.embed.react).toContain('jsonSchema');
     expect(result.embed.react).toContain('resourcePath="/pets"');
+  });
+});
+
+describe('layout decisions through MCP', () => {
+  const spec = {
+    ...petstoreSpec,
+    paths: {
+      ...petstoreSpec.paths,
+      '/assistant/ask': {
+        post: {
+          operationId: 'askAssistant',
+          tags: ['assistant'],
+          requestBody: { content: { 'application/json': { schema: { type: 'object', properties: { question: { type: 'string' } } } } } },
+          responses: { '200': { description: 'stream', content: { 'text/event-stream': { schema: { type: 'string' } } } } },
+        },
+      },
+    },
+  };
+
+  it('reports pages, decisions and, on request, what the agent needs to decide', async () => {
+    const result = await generateUIFromOpenAPI(spec, { includeOperationSummaries: true });
+    expect(result.pages).toEqual([
+      expect.objectContaining({ operationId: 'askAssistant', kind: 'chat', stream: 'sse', chat: expect.objectContaining({ messageField: 'question' }) }),
+    ]);
+    expect(result.decisions.findPets).toEqual({ kind: 'crud', source: 'heuristic' });
+    expect(result.decisionInput?.operations).toHaveLength(4);
+    expect(result.decisionInput?.schema.required).toEqual(['decisions']);
+  });
+
+  it('applies the agent\'s decisions and embeds them in the snippet', async () => {
+    const result = await generateUIFromOpenAPI(spec, {
+      decisions: [{ operationId: 'askAssistant', kind: 'hidden' }, { operationId: 'findPets', kind: 'crud', label: 'All pets' }],
+    });
+    expect(result.pages).toEqual([]);
+    expect(result.decisions.askAssistant).toEqual({ kind: 'hidden', source: 'provider' });
+    expect(result.embed.react).toContain('decisionProvider');
+    expect(result.decisionInput).toBeUndefined();
   });
 });

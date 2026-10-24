@@ -263,13 +263,20 @@ function parseEndpoints(spec: any): ParsedEndpoint[] {
           parameters,
           requestBody: resolveLocalRef(spec, operation.requestBody) as RequestBodyObject,
           responses: responses as Record<string, ResponseObject>,
-          security: operation.security
+          security: operation.security,
+          deprecated: operation.deprecated === true || undefined,
+          extensions: pickExtensions(operation),
         });
       }
     });
   });
 
   return endpoints;
+}
+
+function pickExtensions(operation: Record<string, unknown>): Record<string, unknown> | undefined {
+  const entries = Object.entries(operation).filter(([key]) => key.startsWith('x-'));
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
 }
 
 function mergeParameters(pathLevel?: ParameterObject[], operationLevel?: ParameterObject[]): ParameterObject[] | undefined {

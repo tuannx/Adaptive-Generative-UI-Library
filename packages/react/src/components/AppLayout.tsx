@@ -32,9 +32,11 @@ interface AppLayoutProps {
   menu: MenuItem[];
   apiTitle?: string;
   apiVersion?: string;
+  /** Rendered at the right of the header. */
+  headerExtra?: React.ReactNode;
 }
 
-export const AppLayout: React.FC<AppLayoutProps> = ({ children, menu, apiTitle = 'API Explorer', apiVersion }) => {
+export const AppLayout: React.FC<AppLayoutProps> = ({ children, menu, apiTitle = 'API Explorer', apiVersion, headerExtra }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [pending, setPending] = useState<MenuItem | null>(null);
   const [paramForm] = Form.useForm<Record<string, string>>();
@@ -51,6 +53,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, menu, apiTitle =
     .filter((item) => matchPath({ path: item.key, end: false }, currentPath))
     .sort((a, b) => b.key.length - a.key.length)[0];
   const openGroup = menu.find((group) => group.children?.includes(selected!))?.key;
+  const [openKeys, setOpenKeys] = useState<string[]>(() => (openGroup ? [openGroup] : menu.slice(0, 1).map((group) => group.key)));
+  React.useEffect(() => {
+    if (openGroup) setOpenKeys((keys) => (keys.includes(openGroup) ? keys : [...keys, openGroup]));
+  }, [openGroup]);
 
   const handleClick = (key: string) => {
     const item = items.find((candidate) => candidate.key === key);
@@ -98,7 +104,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, menu, apiTitle =
           theme="dark"
           mode="inline"
           selectedKeys={selected ? [selected.key] : []}
-          defaultOpenKeys={openGroup ? [openGroup] : menu.slice(0, 1).map((group) => group.key)}
+          openKeys={collapsed ? undefined : openKeys}
+          onOpenChange={setOpenKeys}
           items={menuItems}
           onClick={({ key }) => handleClick(key)}
         />
@@ -119,6 +126,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, menu, apiTitle =
             {apiTitle}
           </Title>
           {apiVersion && <Text type="secondary">v{apiVersion}</Text>}
+          {headerExtra && <div style={{ marginLeft: 'auto', alignSelf: 'center' }}>{headerExtra}</div>}
         </Header>
 
         <Content

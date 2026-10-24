@@ -83,8 +83,11 @@ node packages/mcp/dist/cli.js
 | `spec` | object | OpenAPI 3.0 / Swagger 2.0 JSON |
 | `baseUrl` | string? | Override API base URL |
 | `previewBaseUrl` | string? | Demo URL for preview link |
+| `includeOperationSummaries` | boolean? | Also return operation summaries + decision schema/instructions |
+| `decisions` | array? | Your layout decisions `{ operationId, kind: crud\|action\|chat\|hidden, label?, group?, chat? }` |
 
-Returns: routes, menu, React embed snippet, optional previewUrl.
+Returns: routes, menu, pages (action/chat), decisions, React embed snippet, optional previewUrl.
+See `docs/ui-decisions.md` for the decision layers.
 
 Programmatic (tests):
 
@@ -98,6 +101,7 @@ const config = await generateUIFromOpenAPI(spec);
 - TypeScript 7 strict, `verbatimModuleSyntax`
 - Packages use `.js` extensions in imports
 - `@agul/core` has zero React dependency
+- Presentation (crud/action/chat/hidden) is decided in `packages/core/src/decisions.ts` (`planUi`); views never classify endpoints themselves
 - CRUD wiring lives in `buildResources` (`packages/core/src/resources.ts`); views receive a `Resource`, never re-derive relations from paths
 - Build API URLs with `buildApiUrl`/`joinUrl` (never `new URL(path, base)`, it drops the server base path)
 - Components use Ant Design + SWR + axios

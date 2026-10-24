@@ -5,3 +5,5 @@ export * from './resources.js';
 export * from './schema.js';
 export * from './json-schema.js';
 export * from './list-query.js';
+export * from './decisions.js';
+export * from './decision-providers.js';

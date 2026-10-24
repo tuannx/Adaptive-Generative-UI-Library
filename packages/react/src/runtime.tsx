@@ -11,6 +11,8 @@ export interface AgulRuntime {
   http: AxiosInstance;
   /** Pathname under which the generated routes are mounted ('' at the router root). */
   routeBase: string;
+  /** `fetch` with AGUL's auth headers and proxy applied — for streaming responses axios can't read incrementally. */
+  fetch: (url: string, init?: RequestInit) => Promise<Response>;
 }
 
 const RuntimeContext = React.createContext<AgulRuntime>({
@@ -18,6 +20,7 @@ const RuntimeContext = React.createContext<AgulRuntime>({
   schemas: {},
   http: agulHttp,
   routeBase: '',
+  fetch: (url, init) => fetch(url, init),
 });
 
 export const AgulRuntimeProvider = RuntimeContext.Provider;

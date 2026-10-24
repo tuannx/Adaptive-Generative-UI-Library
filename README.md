@@ -73,6 +73,21 @@ from a browser, set `baseUrl` to a same-origin proxy.
 
 The demo accepts `?spec=<url>` (or paste a URL in the toolbar) to try any spec.
 
+### Beyond CRUD: actions, chat, and LLM-decided layout
+
+Every operation gets a page. Operations outside CRUD become **action** forms (result shown as a table,
+record, text or live stream) or a **chat** UI (history, SSE/NDJSON streaming, session id). How each operation
+is shown is decided in three layers — `x-agul-view` in the spec, then an optional decision provider
+(an LLM or your own decision API), then built-in rules:
+
+```tsx
+<AGULRenderer specUrl="/openapi.json" decisionProvider={createHttpDecisionProvider({ url: '/decide' })} />
+```
+
+The Cloudflare Worker includes a `/decide` route backed by Claude (`wrangler secret put ANTHROPIC_API_KEY`).
+Details, provider API and limits: [docs/ui-decisions.md](./docs/ui-decisions.md). Click **Tarot Chat** in the
+demo for a worked example (CRUD + actions + streaming chat).
+
 ## Deploy the demo to Cloudflare
 
 `apps/demo` ships as a Cloudflare Worker: static SPA assets plus a same-origin CORS proxy at

@@ -1,18 +1,32 @@
 import {
-  parseOpenAPI,
-  parseJsonSchema,
+  DECISION_JSON_SCHEMA,
+  DECISION_SYSTEM_PROMPT,
   generateRoutes,
-  buildResources,
-  buildMenu,
+  heuristicDecisions,
+  mergeDecisions,
+  parseJsonSchema,
+  parseOpenAPI,
+  planUi,
+  summarizeOperations,
   type MenuItem,
+  type OperationSummary,
   type ParsedAPI,
+  type ProposedDecision,
   type RouteConfig,
   type SchemaObject,
+  type UiKind,
 } from '@agul/core';
 
 export interface GenerateUIOptions {
   baseUrl?: string;
   previewBaseUrl?: string;
+  /**
+   * Layout decisions proposed by the calling agent (it is an LLM, so it can act as AGUL's decision
+   * provider): `[{ operationId, kind: 'crud' | 'action' | 'chat' | 'hidden', label?, group?, chat? }]`.
+   */
+  decisions?: ProposedDecision[];
+  /** Include per-operation summaries plus the decision schema/instructions, so the agent can decide. */
+  includeOperationSummaries?: boolean;
 }
 
 export interface GeneratedUIConfig {
@@ -29,6 +43,25 @@ export interface GeneratedUIConfig {
     /** Path params needed to reach this resource's list (e.g. `org` for /orgs/:org/members). */
     params: string[];
   }>;
+  /** Action and chat pages for operations outside CRUD. */
+  pages: Array<{
+    operationId: string;
+    kind: 'action' | 'chat';
+    label: string;
+    path: string;
+    method: string;
+    apiEndpoint: string;
+    stream: string;
+    chat?: { messageField: string; historyField?: string; sessionField?: string; replyPath?: string };
+  }>;
+  /** Operation id → presentation in effect, and who decided it. */
+  decisions: Record<string, { kind: UiKind; source: string; label?: string }>;
+  /** Present with `includeOperationSummaries`: what to decide on, and how. */
+  decisionInput?: {
+    instructions: string;
+    schema: typeof DECISION_JSON_SCHEMA;
+    operations: OperationSummary[];
+  };
   routes: Array<{
     path: string;
     component: string;
@@ -54,11 +87,15 @@ export interface GenerateUIFromJsonSchemaOptions {
 
 function buildGeneratedUIConfig(
   parsed: ParsedAPI,
-  routes: RouteConfig[],
   embedReact: string,
-  previewBaseUrl?: string,
+  options: Pick<GenerateUIOptions, 'previewBaseUrl' | 'decisions' | 'includeOperationSummaries'> = {},
 ): GeneratedUIConfig {
-  const resources = buildResources(parsed);
+  const base = heuristicDecisions(parsed);
+  const decided = options.decisions?.length ? mergeDecisions(parsed, base, options.decisions) : base;
+  const plan = planUi(parsed, decided);
+  const { resources } = plan;
+  const routes = generateRoutes(parsed, plan);
+  const previewBaseUrl = options.previewBaseUrl;
 
   return {
     baseUrl: parsed.baseUrl,
@@ -70,7 +107,7 @@ function buildGeneratedUIConfig(
       tags: parsed.tags,
     },
     routeCount: routes.length,
-    menu: buildMenu(resources),
+    menu: plan.menu as MenuItem[],
     resources: resources.map((resource) => ({
       key: resource.key,
       label: resource.label,
@@ -79,6 +116,25 @@ function buildGeneratedUIConfig(
       fields: Object.keys(resource.recordSchema?.properties ?? {}),
       params: [...(resource.paths.list ?? '').matchAll(/:([^/]+)/g)].map((match) => match[1]),
     })),
+    pages: plan.pages.map((page) => ({
+      operationId: page.operationId,
+      kind: page.kind,
+      label: page.label,
+      path: page.path,
+      method: page.method,
+      apiEndpoint: page.apiEndpoint,
+      stream: page.stream,
+      ...(page.chat ? { chat: page.chat } : {}),
+    })),
+    decisions: Object.fromEntries(
+      [...plan.decisions.values()].map((decision) => [
+        decision.operationId,
+        { kind: decision.kind, source: decision.source, ...(decision.label ? { label: decision.label } : {}) },
+      ]),
+    ),
+    decisionInput: options.includeOperationSummaries
+      ? { instructions: DECISION_SYSTEM_PROMPT, schema: DECISION_JSON_SCHEMA, operations: summarizeOperations(parsed, base) }
+      : undefined,
     routes: routes.map((route: RouteConfig) => ({
       path: route.path,
       component: route.component,
@@ -105,13 +161,14 @@ export async function generateUIFromOpenAPI(
     parsed.baseUrl = options.baseUrl;
   }
 
-  const routes = generateRoutes(parsed);
+  const decisionsProp = options.decisions?.length
+    ? `\n  decisionProvider={{ id: 'agent', decide: async () => ${JSON.stringify(options.decisions)} }}`
+    : '';
 
   return buildGeneratedUIConfig(
     parsed,
-    routes,
-    `import { AGULRenderer } from '@agul/react';\n\n<AGULRenderer spec={openApiSpec} baseUrl="${parsed.baseUrl}" />`,
-    options.previewBaseUrl,
+    `import { AGULRenderer } from '@agul/react';\n\n<AGULRenderer spec={openApiSpec} baseUrl="${parsed.baseUrl}"${decisionsProp} />`,
+    options,
   );
 }
 
@@ -127,15 +184,13 @@ export async function generateUIFromJsonSchema(
     tag: options.tag,
   });
 
-  const routes = generateRoutes(parsed);
   const resourcePathAttr = options.resourcePath
     ? ` resourcePath="${options.resourcePath}"`
     : '';
 
   return buildGeneratedUIConfig(
     parsed,
-    routes,
     `import { AGULRenderer } from '@agul/react';\n\n<AGULRenderer jsonSchema={jsonSchema} baseUrl="${parsed.baseUrl}"${resourcePathAttr} />`,
-    options.previewBaseUrl,
+    { previewBaseUrl: options.previewBaseUrl },
   );
 }

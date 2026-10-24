@@ -31,6 +31,10 @@ export {
 export type { AgulRuntime } from './runtime.js';
 
 export { AppLayout } from './components/AppLayout.js';
+export { ActionView } from './components/ActionView.js';
+export { ChatView } from './components/ChatView.js';
+export { ResultView } from './components/ResultView.js';
+export { readStream, extractChunkText } from './http/stream.js';
 export { ListView } from './components/ListView.js';
 export { DetailView } from './components/DetailView.js';
 export { FormView } from './components/FormView.js';
@@ -52,6 +56,18 @@ export {
   getRequestSchema,
   buildResources,
   buildMenu,
+  planUi,
+  heuristicDecisions,
+  resolveDecisions,
+  mergeDecisions,
+  summarizeOperations,
+  createHttpDecisionProvider,
+  createLlmDecisionProvider,
+  withDecisionCache,
+  DECISION_JSON_SCHEMA,
+  DECISION_SYSTEM_PROMPT,
+  buildDecisionPrompt,
+  parseDecisionResponse,
   dereferenceSchema,
   joinUrl,
   parseListQueryBindings,
@@ -75,4 +91,14 @@ export type {
   Resource,
   ResourceOperation,
   ResourcePaths,
+  UiKind,
+  UiDecision,
+  UiDecisionProvider,
+  ProposedDecision,
+  OperationSummary,
+  OperationPage,
+  UiPlan,
+  ChatBinding,
+  StreamFormat,
+  LlmCompletionRequest,
 } from '@agul/core';

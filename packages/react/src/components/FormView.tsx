@@ -136,7 +136,14 @@ export const FormView: React.FC<FormViewProps> = ({ resource, mode }) => {
       }
     >
       {schema ? (
-        <Form form={form} layout="vertical" preserve onFinish={handleSubmit} style={{ maxWidth: 800 }}>
+        <Form
+          form={form}
+          layout="vertical"
+          preserve
+          onFinish={handleSubmit}
+          initialValues={isEdit ? undefined : schemaDefaults(schema)}
+          style={{ maxWidth: 800 }}
+        >
           {wizard ? (
             <FormWizardLayout
               wizard={wizard}
@@ -179,6 +186,27 @@ export const FormView: React.FC<FormViewProps> = ({ resource, mode }) => {
     </Card>
   );
 };
+
+/** `default` values of an object schema's properties (nested objects included), as form initial values. */
+export function schemaDefaults(schema: SchemaObject | undefined): Record<string, unknown> {
+  const values: Record<string, unknown> = {};
+  for (const [key, property] of Object.entries(schema?.properties ?? {})) {
+    if (property.default !== undefined) values[key] = property.default;
+    else if (property.properties) {
+      const nested = schemaDefaults(property);
+      if (Object.keys(nested).length > 0) values[key] = nested;
+    }
+  }
+  return values;
+}
+
+/** Form fields for an object schema (nested objects as fieldsets, field plugins applied at the top level). */
+export function renderSchemaFields(
+  schema: SchemaObject,
+  options: { schemas: Record<string, SchemaObject>; plugins: AgulFieldPlugin[] },
+): React.ReactNode[] {
+  return renderObjectFields(schema, [], { ...options, topLevel: true });
+}
 
 interface RenderOptions {
   schemas: Record<string, SchemaObject>;

@@ -4,7 +4,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, extname, basename } from 'node:path';
 import yaml from 'js-yaml';
-import { parseOpenAPISync, buildResources, buildMenu, isPrimitiveSchema } from '@agul/core';
+import { parseOpenAPISync, planUi, isPrimitiveSchema } from '@agul/core';
 
 const dir = process.argv[2];
 if (!dir) {
@@ -29,8 +29,7 @@ function measure(file) {
   const started = performance.now();
   const spec = load(file);
   const api = parseOpenAPISync(spec);
-  const resources = buildResources(api);
-  const menu = buildMenu(resources);
+  const { resources, pages, menu, decisions } = planUi(api);
   const ms = Math.round(performance.now() - started);
 
   const lists = resources.filter((r) => r.list);
@@ -48,6 +47,10 @@ function measure(file) {
     editForms: resources.filter((r) => r.update && countFields(r.update.schema) > 0).length,
     deletes: resources.filter((r) => r.remove).length,
     fullCrud: resources.filter((r) => r.list && r.detail && r.create && r.update && r.remove).length,
+    actionPages: pages.filter((p) => p.kind === 'action').length,
+    chatPages: pages.filter((p) => p.kind === 'chat').length,
+    hidden: [...decisions.values()].filter((d) => d.kind === 'hidden').length,
+    coverage: Math.round((100 * [...decisions.values()].filter((d) => d.kind !== 'hidden').length) / api.endpoints.length),
     menuItems: menu.reduce((n, g) => n + (g.children?.length ?? 0), 0),
     absoluteBaseUrl: /^https?:\/\//.test(api.baseUrl),
     ms,

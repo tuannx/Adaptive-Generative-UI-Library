@@ -26,6 +26,10 @@ node scripts/measure-specs.mjs /tmp/specs
 | Resources with full CRUD (list + detail + create + edit + delete) | 162 | **519** (×3.2) |
 | Slowest spec (parse + build resources) | 187 ms | 246 ms (GitHub, 1,242 endpoints) |
 
+Since the decision layer (`docs/ui-decisions.md`), operations outside CRUD get pages too: across the
+19 specs (9,102 operations) every non-hidden operation is reachable — 3,168 action pages, 5 chat pages
+(Box `/ai/ask`, OpenAI `/completions`, `/chat/completions`, `/responses`), 48 deprecated operations hidden.
+
 ## What was wrong (and is now handled)
 
 | Pattern | Seen in | Effect before |

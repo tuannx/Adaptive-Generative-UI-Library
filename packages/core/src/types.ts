@@ -23,6 +23,9 @@ export interface ParsedEndpoint {
   requestBody?: RequestBodyObject;
   responses: Record<string, ResponseObject>;
   security?: SecurityRequirement[];
+  deprecated?: boolean;
+  /** `x-*` vendor extensions on the operation, e.g. `x-agul-view`. */
+  extensions?: Record<string, unknown>;
 }
 
 export type HttpMethod = 'get' | 'post' | 'put' | 'patch' | 'delete';
@@ -87,7 +90,7 @@ export interface RouteConfig {
   operationId: string;
 }
 
-export type ComponentType = 'list' | 'detail' | 'form' | 'create' | 'edit' | 'delete';
+export type ComponentType = 'list' | 'detail' | 'form' | 'create' | 'edit' | 'delete' | 'action' | 'chat';
 
 export interface MenuItem {
   key: string;

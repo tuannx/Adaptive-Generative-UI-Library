@@ -133,8 +133,16 @@ function humanize(text: string): string {
     .join(' ');
 }
 
-export function buildResources(parsed: ParsedAPI): Resource[] {
+export interface BuildResourcesOptions {
+  /** Operation ids to leave out of CRUD wiring (they get action/chat pages or are hidden). */
+  exclude?: ReadonlySet<string>;
+}
+
+export function buildResources(parsed: ParsedAPI, options: BuildResourcesOptions = {}): Resource[] {
   const { schemas } = parsed;
+  const endpoints = options.exclude?.size
+    ? parsed.endpoints.filter((endpoint) => !options.exclude!.has(endpoint.operationId))
+    : parsed.endpoints;
   const deref = (schema: SchemaObject | null | undefined) =>
     dereferenceSchema(schema ?? undefined, schemas);
   const responseOf = (endpoint?: ParsedEndpoint) =>
@@ -149,7 +157,7 @@ export function buildResources(parsed: ParsedAPI): Resource[] {
     return schema ? toOperation(endpoint, schema, { contentType: requestContentType(endpoint) }) : undefined;
   };
 
-  const groups = groupEndpoints(parsed.endpoints);
+  const groups = groupEndpoints(endpoints);
   const borrowed = new Set<string>();
   const resources: Resource[] = [];
 
@@ -159,6 +167,8 @@ export function buildResources(parsed: ParsedAPI): Resource[] {
 
     const response = responseOf(listEndpoint);
     if (isPrimitiveSchema(response)) continue;
+    // an undocumented GET with nothing else on its path (`/user/logout`) is an action, not a list
+    if (!response && !hasItemOperations(group) && !group.collection.post) continue;
 
     const rows = findListRows(response);
     const rowSchema = rows?.schema;

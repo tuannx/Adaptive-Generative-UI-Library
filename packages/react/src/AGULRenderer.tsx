@@ -8,27 +8,34 @@ import {
   useLocation,
   useParams,
 } from 'react-router-dom';
-import { Alert, ConfigProvider, Spin, message } from 'antd';
+import { Alert, ConfigProvider, Spin, Tag, Tooltip, message } from 'antd';
 import {
-  buildMenu,
-  buildResources,
   generateRoutes,
+  heuristicDecisions,
+  planUi,
+  resolveDecisions,
+  withDecisionCache,
   parseOpenAPI,
   parseOpenAPISync,
   parseJsonSchema,
   wrapJsonSchemaAsOpenAPI,
   type JsonSchemaInputOptions,
-  type MenuItem,
+  type OperationPage,
   type ParsedAPI,
   type Resource,
   type RouteConfig,
   type SchemaObject,
+  type UiDecision,
+  type UiDecisionProvider,
+  type UiPlan,
 } from '@agul/core';
+import { ActionView } from './components/ActionView.js';
+import { ChatView } from './components/ChatView.js';
 import { AppLayout } from './components/AppLayout.js';
 import { ListView } from './components/ListView.js';
 import { DetailView } from './components/DetailView.js';
 import { FormView } from './components/FormView.js';
-import { createAgulHttp, withProxy, type GetAuthHeaders } from './http/client.js';
+import { createAgulHttp, resolveAuthHeaders, withProxy, type GetAuthHeaders } from './http/client.js';
 import { PluginProvider } from './plugins/PluginContext.js';
 import type { AgulFieldPlugin } from './plugins/types.js';
 import { AgulRuntimeProvider, type AgulRuntime } from './runtime.js';
@@ -59,6 +66,17 @@ export interface AGULRendererProps {
   proxyUrl?: string;
   /** Router basename when AGUL creates its own BrowserRouter (ignored inside a host router) */
   basename?: string;
+  /**
+   * Decides how each operation is presented (CRUD / action / chat / hidden) — e.g.
+   * `createHttpDecisionProvider({ url: '/decide' })` backed by an LLM. AGUL renders its own
+   * heuristic layout immediately and switches when the provider answers; failures keep the heuristic layout.
+   * `x-agul-view` in the spec always wins.
+   */
+  decisionProvider?: UiDecisionProvider | UiDecisionProvider[];
+  /** Cache provider decisions in localStorage per spec (default true). */
+  cacheDecisions?: boolean;
+  /** Called with the decisions in effect whenever they change. */
+  onDecisions?: (decisions: Map<string, UiDecision>) => void;
   /** Called when spec processing fails */
   onError?: (error: Error) => void;
   /** Called when spec is loaded and routes are ready */
@@ -67,8 +85,7 @@ export interface AGULRendererProps {
 
 interface AgulModel {
   api: ParsedAPI;
-  resources: Resource[];
-  menu: MenuItem[];
+  plan: UiPlan;
 }
 
 type ModelState = { status: 'loading' } | { status: 'error'; error: Error } | ({ status: 'ready' } & AgulModel);
@@ -94,6 +111,9 @@ function AGULApp({
   getAuthHeaders,
   proxyUrl,
   plugins = [],
+  decisionProvider,
+  cacheDecisions = true,
+  onDecisions,
   onError,
   onReady,
   embedded,
@@ -104,6 +124,14 @@ function AGULApp({
   const auth = useLatest({ token, getAuthHeaders });
   const proxy = useLatest(proxyUrl);
   const http = React.useMemo(() => createAgulHttp(() => auth.current, () => proxy.current), [auth, proxy]);
+  const agulFetch = React.useCallback(
+    async (url: string, init: RequestInit = {}) => {
+      const headers = new Headers(init.headers);
+      for (const [key, value] of Object.entries(await resolveAuthHeaders(auth.current))) headers.set(key, value);
+      return fetch(withProxy(url, proxy.current), { ...init, headers });
+    },
+    [auth, proxy],
+  );
   const onReadyRef = useLatest(onReady);
   const onErrorRef = useLatest(onError);
 
@@ -129,8 +157,7 @@ function AGULApp({
       }
 
       if (baseUrl) api.baseUrl = baseUrl;
-      const resources = buildResources(api);
-      return { status: 'ready', api, resources, menu: buildMenu(resources) };
+      return { status: 'ready', api, plan: planUi(api, heuristicDecisions(api)) };
     } catch (err) {
       return { status: 'error', error: err instanceof Error ? err : new Error(String(err)) };
     }
@@ -145,12 +172,27 @@ function AGULApp({
     }
   }, [state, onReadyRef, onErrorRef]);
 
+  const decided = useProviderDecisions(
+    state.status === 'ready' ? state.api : undefined,
+    decisionProvider,
+    cacheDecisions,
+  );
+  const plan = React.useMemo(
+    () =>
+      state.status !== 'ready' ? undefined : decided.decisions ? planUi(state.api, decided.decisions) : state.plan,
+    [state, decided.decisions],
+  );
+  const onDecisionsRef = useLatest(onDecisions);
+  React.useEffect(() => {
+    if (plan) onDecisionsRef.current?.(plan.decisions);
+  }, [plan, onDecisionsRef]);
+
   const runtime = React.useMemo<AgulRuntime | null>(
     () =>
       state.status === 'ready'
-        ? { baseUrl: state.api.baseUrl, schemas: state.api.schemas, http, routeBase }
+        ? { baseUrl: state.api.baseUrl, schemas: state.api.schemas, http, routeBase, fetch: agulFetch }
         : null,
-    [state, http, routeBase],
+    [state, http, routeBase, agulFetch],
   );
 
   if (state.status === 'loading') {
@@ -166,7 +208,7 @@ function AGULApp({
     return <Alert message="Error" description={state.error.message} type="error" showIcon style={{ margin: 24 }} />;
   }
 
-  if (state.resources.length === 0) {
+  if (!plan || (plan.resources.length === 0 && plan.pages.length === 0)) {
     return (
       <Alert
         message="No Routes Found"
@@ -178,15 +220,21 @@ function AGULApp({
     );
   }
 
-  const defaultPath = state.menu.flatMap((group) => group.children ?? []).find((item) => !item.params)?.key;
+  const defaultPath = plan.menu.flatMap((group) => group.children ?? []).find((item) => !item.params)?.key;
 
   return (
     <AgulRuntimeProvider value={runtime!}>
       <PluginProvider plugins={plugins}>
-        <AppLayout menu={state.menu} apiTitle={state.api.title} apiVersion={state.api.version}>
+        <AppLayout
+          menu={plan.menu}
+          apiTitle={state.api.title}
+          apiVersion={state.api.version}
+          headerExtra={decisionProvider ? <DecisionStatus status={decided.status} error={decided.error} /> : undefined}
+        >
           <Routes>
             {defaultPath && <Route index element={<Navigate to={{ pathname: relative(defaultPath), search }} replace />} />}
-            {state.resources.flatMap((resource) => resourceRoutes(resource))}
+            {plan.resources.flatMap((resource) => resourceRoutes(resource))}
+            {plan.pages.map((page) => pageRoute(page))}
             <Route
               path="*"
               element={<Alert message="404 Not Found" description="The page you are looking for does not exist" type="warning" showIcon />}
@@ -208,6 +256,83 @@ function resourceRoutes(resource: Resource): React.ReactElement[] {
   if (paths.edit) routes.push(<Route key={`${key}:edit`} path={relative(paths.edit)} element={<FormView key="edit" resource={resource} mode="edit" />} />);
 
   return routes;
+}
+
+function pageRoute(page: OperationPage): React.ReactElement {
+  const element =
+    page.kind === 'chat' ? <ChatView key={page.operationId} page={page} /> : <ActionView key={page.operationId} page={page} />;
+  return <Route key={`op:${page.operationId}`} path={relative(page.path)} element={element} />;
+}
+
+type DecisionStatusValue = 'idle' | 'pending' | 'done' | 'error';
+
+function DecisionStatus({ status, error }: { status: DecisionStatusValue; error?: string }) {
+  const [color, text] =
+    status === 'pending'
+      ? ['processing', 'Arranging layout…']
+      : status === 'done'
+        ? ['purple', 'AI layout']
+        : status === 'error'
+          ? ['warning', 'Default layout']
+          : ['default', 'Default layout'];
+  return (
+    <Tooltip title={status === 'error' ? `Decision provider failed: ${error}` : undefined}>
+      <Tag color={color} data-testid="agul-decision-status" data-status={status}>
+        {text}
+      </Tag>
+    </Tooltip>
+  );
+}
+
+function storageStore() {
+  return {
+    get: (key: string) => window.localStorage.getItem(key),
+    set: (key: string, value: string) => window.localStorage.setItem(key, value),
+  };
+}
+
+/** Runs the decision providers for a spec; keeps the heuristic plan until they answer. */
+function useProviderDecisions(
+  api: ParsedAPI | undefined,
+  provider: UiDecisionProvider | UiDecisionProvider[] | undefined,
+  cache: boolean,
+): { decisions?: Map<string, UiDecision>; status: DecisionStatusValue; error?: string } {
+  const providers = React.useMemo(() => (provider ? (Array.isArray(provider) ? provider : [provider]) : []), [provider]);
+  const providerKey = providers.map((item) => item.id).join('|');
+  const providersRef = useLatest(providers);
+  const [result, setResult] = React.useState<{
+    api?: ParsedAPI;
+    decisions?: Map<string, UiDecision>;
+    status: DecisionStatusValue;
+    error?: string;
+  }>({ status: 'idle' });
+
+  React.useEffect(() => {
+    if (!api || !providerKey) return;
+    const controller = new AbortController();
+    const errors: string[] = [];
+    const active = providersRef.current.map((item) =>
+      cache && typeof window !== 'undefined' ? withDecisionCache(item, storageStore()) : item,
+    );
+    setResult({ api, status: 'pending' });
+
+    resolveDecisions(api, active, {
+      signal: controller.signal,
+      onError: (failed, error) => errors.push(`${failed.id}: ${error instanceof Error ? error.message : String(error)}`),
+    })
+      .then((decisions) => {
+        if (controller.signal.aborted) return;
+        const allFailed = errors.length === active.length;
+        setResult({ api, decisions: allFailed ? undefined : decisions, status: allFailed ? 'error' : 'done', error: errors.join('; ') || undefined });
+      })
+      .catch((error) => {
+        if (!controller.signal.aborted) setResult({ api, status: 'error', error: String(error) });
+      });
+
+    return () => controller.abort();
+  }, [api, providerKey, cache, providersRef]);
+
+  return result.api === api ? result : { status: providerKey ? 'pending' : 'idle' };
 }
 
 /** Pathname of the host `<Route path="/x/*">` AGUL is mounted in ('' when AGUL owns the router). */
@@ -287,7 +412,7 @@ export async function parseSpecText(text: string): Promise<Record<string, unknow
 export async function createAGULFromSpec(
   spec: Record<string, unknown>,
   options?: { baseUrl?: string },
-): Promise<{ api: ParsedAPI; routes: RouteConfig[]; menu: MenuItem[]; resources: Resource[] }> {
+): Promise<ReturnType<typeof describeApi>> {
   const api = await parseOpenAPI(spec);
   if (options?.baseUrl) api.baseUrl = options.baseUrl;
   return describeApi(api);
@@ -296,11 +421,11 @@ export async function createAGULFromSpec(
 export async function createAGULFromJsonSchema(
   schema: SchemaObject,
   options: JsonSchemaInputOptions,
-): Promise<{ api: ParsedAPI; routes: RouteConfig[]; menu: MenuItem[]; resources: Resource[] }> {
+): Promise<ReturnType<typeof describeApi>> {
   return describeApi(await parseJsonSchema(schema, options));
 }
 
 function describeApi(api: ParsedAPI) {
-  const resources = buildResources(api);
-  return { api, routes: generateRoutes(api), menu: buildMenu(resources), resources };
+  const plan = planUi(api);
+  return { api, routes: generateRoutes(api), menu: plan.menu, resources: plan.resources, pages: plan.pages, decisions: plan.decisions };
 }
