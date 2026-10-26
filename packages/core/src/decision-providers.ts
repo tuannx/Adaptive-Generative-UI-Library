@@ -91,7 +91,7 @@ export interface HttpDecisionProviderOptions {
 export function createHttpDecisionProvider(options: HttpDecisionProviderOptions): UiDecisionProvider {
   const doFetch = options.fetch ?? ((...args: Parameters<typeof fetch>) => fetch(...args));
   return {
-    id: `http:${options.url}`,
+    id: `decision API ${options.url}`,
     async decide(operations, context) {
       const timeout = AbortSignal.timeout(options.timeoutMs ?? 60_000);
       const signal = context.signal ? AbortSignal.any([context.signal, timeout]) : timeout;

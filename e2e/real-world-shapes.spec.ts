@@ -95,6 +95,7 @@ test.describe('AGUL Demo — real-world spec shapes', () => {
     await page.getByTestId('demo-toolbar').getByRole('button', { name: 'Load', exact: true }).click();
     await expect(page).toHaveURL(/spec=https/);
 
+    await expect(page.getByTestId('agul-welcome')).toBeVisible();
     await page.getByTestId('agul-sidebar').getByText('List members').click();
     const dialog = page.getByRole('dialog');
     await dialog.getByLabel('Org').fill('acme');

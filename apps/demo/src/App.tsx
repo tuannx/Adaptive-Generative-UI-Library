@@ -24,7 +24,9 @@ function rememberSpecUrl(url: string | undefined): void {
   if (url && url !== DEFAULT_SPEC) params.set('spec', url);
   else params.delete('spec');
   const query = params.toString();
-  window.history.replaceState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}`);
+  // A page of the previous spec rarely exists in the next one: restart at the root and let the router know.
+  window.history.replaceState(null, '', `/${query ? `?${query}` : ''}`);
+  window.dispatchEvent(new PopStateEvent('popstate'));
 }
 
 function App() {

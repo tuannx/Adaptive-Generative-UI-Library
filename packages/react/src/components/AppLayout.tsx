@@ -38,6 +38,7 @@ interface AppLayoutProps {
 
 export const AppLayout: React.FC<AppLayoutProps> = ({ children, menu, apiTitle = 'API Explorer', apiVersion, headerExtra }) => {
   const [collapsed, setCollapsed] = useState(false);
+  const [narrow, setNarrow] = useState(false);
   const [pending, setPending] = useState<MenuItem | null>(null);
   const [paramForm] = Form.useForm<Record<string, string>>();
   const navigate = useAgulNavigate();
@@ -92,8 +93,11 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, menu, apiTitle =
         collapsible
         collapsed={collapsed}
         onCollapse={setCollapsed}
-        breakpoint="lg"
+        breakpoint="md"
+        onBreakpoint={setNarrow}
+        collapsedWidth={narrow ? 0 : 80}
         width={250}
+        style={narrow ? { position: 'fixed', zIndex: 1000, height: '100vh', left: 0, top: 0 } : undefined}
       >
         <div style={{ height: 64, display: 'flex', alignItems: 'center', padding: '0 24px' }}>
           <Title level={4} style={{ margin: 0, color: 'white' }}>
@@ -107,14 +111,17 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, menu, apiTitle =
           openKeys={collapsed ? undefined : openKeys}
           onOpenChange={setOpenKeys}
           items={menuItems}
-          onClick={({ key }) => handleClick(key)}
+          onClick={({ key }) => {
+            handleClick(key);
+            if (narrow) setCollapsed(true);
+          }}
         />
       </Sider>
 
       <Layout>
         <Header
           style={{
-            padding: '0 24px',
+            padding: narrow ? '0 12px 0 48px' : '0 24px',
             background: colorBgContainer,
             display: 'flex',
             alignItems: 'baseline',
@@ -131,8 +138,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, menu, apiTitle =
 
         <Content
           style={{
-            margin: 24,
-            padding: 24,
+            margin: narrow ? 8 : 24,
+            padding: narrow ? 12 : 24,
             minHeight: 280,
             background: colorBgContainer,
             borderRadius: borderRadiusLG,

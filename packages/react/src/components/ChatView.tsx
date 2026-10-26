@@ -62,7 +62,11 @@ export function ChatView({ page }: { page: OperationPage }) {
 
   const send = async () => {
     const text = draft.trim();
-    if (!text || sending) return;
+    if (!text) return;
+    if (sending) {
+      setError('Still replying — wait for the answer to finish or press Stop');
+      return;
+    }
 
     let extraValues: Record<string, unknown> = {};
     if (extra) {

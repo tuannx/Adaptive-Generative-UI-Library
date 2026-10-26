@@ -8,7 +8,7 @@ import {
   useLocation,
   useParams,
 } from 'react-router-dom';
-import { Alert, ConfigProvider, Spin, Tag, Tooltip, message } from 'antd';
+import { Alert, ConfigProvider, Result, Spin, Tag, Tooltip, message } from 'antd';
 import {
   generateRoutes,
   heuristicDecisions,
@@ -232,7 +232,22 @@ function AGULApp({
           headerExtra={decisionProvider ? <DecisionStatus status={decided.status} error={decided.error} /> : undefined}
         >
           <Routes>
-            {defaultPath && <Route index element={<Navigate to={{ pathname: relative(defaultPath), search }} replace />} />}
+            <Route
+              index
+              element={
+                defaultPath ? (
+                  <Navigate to={{ pathname: relative(defaultPath), search }} replace />
+                ) : (
+                  <div data-testid="agul-welcome">
+                    <Result
+                      status="info"
+                      title={state.api.title}
+                      subTitle="Pick a page from the menu. Pages under a path parameter ask for its value first."
+                    />
+                  </div>
+                )
+              }
+            />
             {plan.resources.flatMap((resource) => resourceRoutes(resource))}
             {plan.pages.map((page) => pageRoute(page))}
             <Route
