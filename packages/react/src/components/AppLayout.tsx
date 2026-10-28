@@ -138,6 +138,11 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, menu, apiTitle =
             />
           </div>
         )}
+        {query && shownMenu.length === 0 && (
+          <div style={{ padding: '8px 24px', color: 'rgba(255,255,255,0.45)' }} data-testid="agul-menu-empty">
+            No page matches “{menuFilter.trim()}”
+          </div>
+        )}
         <Menu
           theme="dark"
           mode="inline"
@@ -145,6 +150,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, menu, apiTitle =
           openKeys={collapsed ? undefined : query ? shownMenu.map((group) => group.key) : openKeys}
           onOpenChange={setOpenKeys}
           items={menuItems}
+          style={{ display: shownMenu.length > 0 ? undefined : 'none' }}
           onClick={({ key }) => {
             handleClick(key);
             if (narrow) setCollapsed(true);

@@ -64,6 +64,8 @@ See `.planning/SWARM_ROADMAP.md` for full backlog.
 import { AGULRenderer, createAGULFromSpec } from '@agul/react';
 
 <AGULRenderer spec={openApiJson} baseUrl="https://api.example.com" />
+// sign-in from securitySchemes + role/scope gating (docs/auth.md)
+<AGULRenderer specUrl="/openapi.json" auth={{ oauth: { clientId: 'ui' } }} authorities={['admin']} />
 ```
 
 ## MCP Server (for Cursor/Claude agents)
@@ -103,6 +105,9 @@ const config = await generateUIFromOpenAPI(spec);
 - `@agul/core` has zero React dependency
 - Presentation (crud/action/chat/hidden) is decided in `packages/core/src/decisions.ts` (`planUi`); views never classify endpoints themselves
 - CRUD wiring lives in `buildResources` (`packages/core/src/resources.ts`); views receive a `Resource`, never re-derive relations from paths
+- Access control is decided in `planUi(api, decisions, { grants })` (`packages/core/src/security.ts`); views only check whether an operation is present
+- Credentials are attached in `packages/react/src/auth/` and only to the API origin; never send them elsewhere
+- Use `App.useApp()` for `message`/`modal` (antd's static helpers render nothing under React 19)
 - Build API URLs with `buildApiUrl`/`joinUrl` (never `new URL(path, base)`, it drops the server base path)
 - Components use Ant Design + SWR + axios
 - No comments unless non-obvious business logic

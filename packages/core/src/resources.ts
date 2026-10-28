@@ -124,10 +124,21 @@ function hasFormFields(schema: SchemaObject | undefined): boolean {
   return !!schema && Object.keys(schema.properties ?? {}).length > 0;
 }
 
+const VERSION_SEGMENT = /^v\d+([a-z]+\d*)?$/i;
+const PREFIX_SEGMENT = /^(api|apis|rest|public)$/i;
+
+/** A readable name for an API path: version prefixes (`/api/v1`, `/apis/apps/v1`) and path params left out. */
 function humanize(text: string): string {
-  return text
-    .replace(/\{[^}]*\}/g, '')
-    .split(/[/_-]+/)
+  const segments = text.split('/').filter((segment) => segment && !segment.startsWith('{'));
+  let lastVersion = -1;
+  segments.forEach((segment, index) => {
+    if (VERSION_SEGMENT.test(segment)) lastVersion = index;
+  });
+  let meaningful = lastVersion >= 0 && lastVersion < segments.length - 1 ? segments.slice(lastVersion + 1) : segments;
+  while (meaningful.length > 1 && PREFIX_SEGMENT.test(meaningful[0])) meaningful = meaningful.slice(1);
+  return meaningful
+    .join('/')
+    .split(/[/_.-]+/)
     .filter(Boolean)
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');

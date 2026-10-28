@@ -88,6 +88,20 @@ The Cloudflare Worker includes a `/decide` route backed by Claude (`wrangler sec
 Details, provider API and limits: [docs/ui-decisions.md](./docs/ui-decisions.md). Click **Tarot Chat** in the
 demo for a worked example (CRUD + actions + streaming chat).
 
+### Sign-in and permissions
+
+AGUL signs users in with whatever the spec's `securitySchemes` declare — API key, Basic, Bearer, OAuth 2
+(authorization code + PKCE, password, client credentials) or OpenID Connect — refreshes tokens, and asks again on a 401.
+Operations whose OAuth scopes or `x-agul-roles` the user lacks disappear from menus, pages and buttons:
+
+```tsx
+<AGULRenderer specUrl="/openapi.json" auth={{ oauth: { clientId: 'admin-ui' } }} />
+// or tell AGUL what the user may do:
+<AGULRenderer specUrl="/openapi.json" token={jwt} authorities={['admin']} />
+```
+
+Details: [docs/auth.md](./docs/auth.md). Click **Helpdesk (secured)** in the demo to sign in as an admin, agent or viewer.
+
 ## Deploy the demo to Cloudflare
 
 `apps/demo` ships as a Cloudflare Worker: static SPA assets plus a same-origin CORS proxy at
