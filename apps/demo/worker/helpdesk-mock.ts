@@ -196,6 +196,7 @@ function validateTicket(body: Record<string, unknown>, partial: boolean): string
   if (!partial && (typeof body.title !== 'string' || body.title.trim().length < 3)) return 'title must be at least 3 characters';
   if (body.status !== undefined && !['open', 'pending', 'closed'].includes(String(body.status))) return 'status is invalid';
   if (body.priority !== undefined && !['low', 'normal', 'high'].includes(String(body.priority))) return 'priority is invalid';
+  if (String(body.requester ?? '').endsWith('@blocked.test')) return 'requester is on the block list';
   return undefined;
 }
 

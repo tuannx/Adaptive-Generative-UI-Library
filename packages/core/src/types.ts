@@ -93,6 +93,16 @@ export interface SchemaObject {
   oneOf?: SchemaObject[];
   anyOf?: SchemaObject[];
   readOnly?: boolean;
+  writeOnly?: boolean;
+  minLength?: number;
+  maxLength?: number;
+  pattern?: string;
+  minimum?: number;
+  maximum?: number;
+  minItems?: number;
+  maxItems?: number;
+  nullable?: boolean;
+  deprecated?: boolean;
   [extension: `x-${string}`]: unknown;
 }
 

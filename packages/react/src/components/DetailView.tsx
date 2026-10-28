@@ -1,10 +1,11 @@
 import React from 'react';
-import { Card, Descriptions, Button, Space, message, Popconfirm, Spin, Alert } from 'antd';
+import { Card, Descriptions, Button, Space, Popconfirm, Skeleton, Alert, App } from 'antd';
 import { EditOutlined, DeleteOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { useParams } from 'react-router-dom';
 import useSWR from 'swr';
 import { buildApiUrl, buildPathParamsFromRecord, buildRouterPath, type Resource } from '@agul/core';
 import { useAgulFetcher, useAgulNavigate, useAgulRuntime, useRevalidateList } from '../runtime.js';
+import { describeApiError } from '../http/errors.js';
 import { formatLabel, unwrapRecord } from './format.js';
 import { renderValue } from './values.js';
 
@@ -19,9 +20,10 @@ export const DetailView: React.FC<DetailViewProps> = ({ resource }) => {
   const navigate = useAgulNavigate();
   const revalidate = useRevalidateList(resource);
   const params = useParams();
+  const { message } = App.useApp();
 
   const apiUrl = buildApiUrl(baseUrl, detail.apiEndpoint, params);
-  const { data, error, isLoading } = useSWR(apiUrl, fetcher);
+  const { data, error, isLoading, mutate } = useSWR(apiUrl, fetcher);
   const record = unwrapRecord(data) as Record<string, unknown> | undefined;
 
   const handleBack = () => {
@@ -38,24 +40,25 @@ export const DetailView: React.FC<DetailViewProps> = ({ resource }) => {
       await revalidate(params);
       handleBack();
     } catch (err) {
-      message.error(`Delete failed: ${err instanceof Error ? err.message : String(err)}`);
+      message.error(`Delete failed — ${describeApiError(err).message}`);
     }
   };
 
   let body: React.ReactNode;
   if (isLoading) {
-    body = (
-      <div style={{ textAlign: 'center', padding: 50 }}>
-        <Spin size="large" />
-      </div>
-    );
+    body = <Skeleton active paragraph={{ rows: 6 }} />;
   } else if (error) {
     body = (
       <Alert
         type="error"
         showIcon
         message="Failed to load data"
-        description={error instanceof Error ? error.message : String(error)}
+        description={describeApiError(error).message}
+        action={
+          <Button size="small" onClick={() => mutate()}>
+            Retry
+          </Button>
+        }
       />
     );
   } else if (!record || typeof record !== 'object') {
@@ -102,12 +105,14 @@ export const DetailView: React.FC<DetailViewProps> = ({ resource }) => {
             )}
             {resource.remove && (
               <Popconfirm
-                title="Are you sure you want to delete this item?"
+                title="Delete this item?"
+                description="This can't be undone."
                 onConfirm={handleDelete}
                 okText="Yes"
+                okButtonProps={{ danger: true }}
                 cancelText="No"
               >
-                <Button danger icon={<DeleteOutlined />}>
+                <Button danger icon={<DeleteOutlined />} data-testid="agul-detail-delete">
                   Delete
                 </Button>
               </Popconfirm>

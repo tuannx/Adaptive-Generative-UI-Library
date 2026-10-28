@@ -1,38 +1,5 @@
-import { test, expect, type Page } from '@playwright/test';
-import { handleHelpdeskMock } from '../apps/demo/worker/helpdesk-mock.js';
-
-const SPEC = '/examples/helpdesk-secured.json';
-
-async function mockHelpdesk(page: Page) {
-  await page.route('**/mock/helpdesk/**', async (route) => {
-    const request = route.request();
-    const response = await handleHelpdeskMock(
-      new Request(request.url(), {
-        method: request.method(),
-        headers: request.headers(),
-        body: request.postData() ?? undefined,
-        redirect: 'manual',
-      }),
-    );
-    await route.fulfill({
-      status: response.status,
-      headers: Object.fromEntries(response.headers),
-      body: Buffer.from(await response.arrayBuffer()),
-    });
-  });
-}
-
-const sidebar = (page: Page) => page.getByTestId('agul-sidebar');
-const menuItems = (page: Page) => sidebar(page).locator('.ant-menu-item');
-
-async function signInAs(page: Page, user: 'lan' | 'minh' | 'vy') {
-  // the first API call answers 401, which opens the sign-in dialog by itself
-  await expect(page.getByTestId('agul-signin-panel')).toBeVisible();
-  await page.getByRole('tab', { name: /helpdeskId/ }).click();
-  await page.getByTestId('agul-signin-panel').getByRole('button', { name: /Continue with helpdeskId/ }).click();
-  await page.getByTestId(`mock-login-${user}`).click();
-  await expect(page.getByTestId('agul-user-menu')).toBeVisible();
-}
+import { test, expect } from '@playwright/test';
+import { HELPDESK_SPEC as SPEC, menuItems, mockHelpdesk, sidebar, signInAs } from './helpers/helpdesk.js';
 
 test.describe('AGUL — secured API (OpenID Connect, scopes, roles)', () => {
   test.beforeEach(async ({ page }) => {
@@ -72,6 +39,7 @@ test.describe('AGUL — secured API (OpenID Connect, scopes, roles)', () => {
     await expect(sidebar(page)).toContainText('Rebuild search index');
 
     await page.getByTestId('agul-list-view').getByRole('button', { name: 'Create New' }).click();
+    await expect(page.getByTestId('agul-form-view')).toBeVisible();
     await page.getByLabel('Title').fill('Printer on fire');
     await page.getByLabel('Requester').fill('ops@example.com');
     await page.getByTestId('agul-form-submit').click();

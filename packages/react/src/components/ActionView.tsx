@@ -6,6 +6,7 @@ import { buildApiUrl, type OperationPage, type ParameterObject, type SchemaObjec
 import { useAgulPlugins } from '../plugins/PluginContext.js';
 import { encodeBody } from '../http/encode.js';
 import { readStream } from '../http/stream.js';
+import { describeApiError, responseError } from '../http/errors.js';
 import { useAgulRuntime } from '../runtime.js';
 import { renderSchemaFields, schemaDefaults } from './FormView.js';
 import { formatLabel } from './format.js';
@@ -122,7 +123,11 @@ export function ActionView({ page }: { page: OperationPage }) {
       const responseType = response.headers.get('content-type') ?? '';
       const streaming = page.stream !== 'none' || /event-stream|ndjson/.test(responseType);
       if (!response.ok) {
-        throw new Error(`${response.status} ${response.statusText}: ${(await response.text()).slice(0, 500)}`);
+        const failure = await responseError(response);
+        if (failure.info.fieldErrors.length > 0) {
+          form.setFields(failure.info.fieldErrors.map((field) => ({ name: field.name, errors: field.errors })));
+        }
+        throw failure;
       }
       if (page.method !== 'get') {
         // an action can change any resource: drop cached lists and records so they refetch
@@ -146,7 +151,7 @@ export function ActionView({ page }: { page: OperationPage }) {
         setResult({ status: response.status, value });
       }
     } catch (err) {
-      if (!controller.signal.aborted) setError(err instanceof Error ? err.message : String(err));
+      if (!controller.signal.aborted) setError(describeApiError(err).message);
     } finally {
       if (abortRef.current === controller) setRunning(false);
     }

@@ -5,6 +5,7 @@ import { buildApiUrl, type OperationPage, type SchemaObject } from '@agul/core';
 import { useAgulPlugins } from '../plugins/PluginContext.js';
 import { readPath, readStream, extractChunkText } from '../http/stream.js';
 import { useAgulRuntime } from '../runtime.js';
+import { describeApiError, responseError } from '../http/errors.js';
 import { renderSchemaFields, schemaDefaults } from './FormView.js';
 
 interface ChatMessage {
@@ -114,7 +115,7 @@ export function ChatView({ page }: { page: OperationPage }) {
         body: JSON.stringify(body),
         signal: controller.signal,
       });
-      if (!response.ok) throw new Error(`${response.status} ${response.statusText}: ${(await response.text()).slice(0, 300)}`);
+      if (!response.ok) throw await responseError(response);
 
       const type = response.headers.get('content-type') ?? '';
       const format = type.includes('event-stream') ? 'sse' : type.includes('ndjson') ? 'ndjson' : type.startsWith('text/') ? 'text' : page.stream;
@@ -127,7 +128,7 @@ export function ChatView({ page }: { page: OperationPage }) {
       }
     } catch (err) {
       if (controller.signal.aborted) return;
-      const reason = err instanceof Error ? err.message : String(err);
+      const reason = describeApiError(err).message;
       setMessages((current) => {
         const next = [...current];
         next[next.length - 1] = { role: 'assistant', content: reason, error: true };

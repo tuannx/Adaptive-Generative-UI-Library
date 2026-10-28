@@ -3,7 +3,7 @@
  */
 
 import { useMemo, useState } from 'react';
-import { Upload, Button, Input, Switch, Tooltip, message } from 'antd';
+import { App as AntdApp, Upload, Button, Input, Switch, Tooltip } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import type { UploadFile } from 'antd';
 import { AGULRenderer, createHttpDecisionProvider, parseSpecText } from '@agul/react';
@@ -37,6 +37,7 @@ function redirectUri(): string {
 }
 
 function App() {
+  const { message } = AntdApp.useApp();
   const [spec, setSpec] = useState<Record<string, unknown> | undefined>(undefined);
   const [specUrl, setSpecUrlState] = useState<string | undefined>(
     () => readQueryParam('spec') ?? DEFAULT_SPEC,

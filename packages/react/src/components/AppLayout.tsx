@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Form, Input, Layout, Menu, Modal, Typography, theme } from 'antd';
-import { ApiOutlined } from '@ant-design/icons';
+import { ApiOutlined, SearchOutlined } from '@ant-design/icons';
 import { matchPath, useLocation } from 'react-router-dom';
 import type { MenuItem } from '@agul/core';
 import { useAgulNavigate, useAgulRuntime } from '../runtime.js';
@@ -10,6 +10,7 @@ const { Header, Sider, Content } = Layout;
 const { Title, Text } = Typography;
 
 const PARAMS_STORAGE_KEY = 'agul:path-params';
+const MENU_SEARCH_THRESHOLD = 15;
 
 function readStoredParams(): Record<string, string> {
   try {
@@ -40,6 +41,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, menu, apiTitle =
   const [collapsed, setCollapsed] = useState(false);
   const [narrow, setNarrow] = useState(false);
   const [pending, setPending] = useState<MenuItem | null>(null);
+  const [menuFilter, setMenuFilter] = useState('');
   const [paramForm] = Form.useForm<Record<string, string>>();
   const navigate = useAgulNavigate();
   const { routeBase } = useAgulRuntime();
@@ -79,7 +81,23 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, menu, apiTitle =
     navigate(path);
   };
 
-  const menuItems = menu.map((group) => ({
+  const query = menuFilter.trim().toLowerCase();
+  const shownMenu = React.useMemo(
+    () =>
+      query
+        ? menu
+            .map((group) => ({
+              ...group,
+              children: group.label.toLowerCase().includes(query)
+                ? group.children
+                : group.children?.filter((item) => item.label.toLowerCase().includes(query) || item.key.toLowerCase().includes(query)),
+            }))
+            .filter((group) => group.children?.length)
+        : menu,
+    [menu, query],
+  );
+
+  const menuItems = shownMenu.map((group) => ({
     key: group.key,
     label: group.label,
     icon: <ApiOutlined />,
@@ -107,11 +125,24 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, menu, apiTitle =
             {collapsed ? 'A' : 'AGUL'}
           </Title>
         </div>
+        {items.length > MENU_SEARCH_THRESHOLD && !collapsed && (
+          <div style={{ padding: '0 16px 8px' }}>
+            <Input
+              size="small"
+              allowClear
+              prefix={<SearchOutlined />}
+              placeholder={`Find a page (${items.length})`}
+              value={menuFilter}
+              onChange={(event) => setMenuFilter(event.target.value)}
+              data-testid="agul-menu-search"
+            />
+          </div>
+        )}
         <Menu
           theme="dark"
           mode="inline"
           selectedKeys={selected ? [selected.key] : []}
-          openKeys={collapsed ? undefined : openKeys}
+          openKeys={collapsed ? undefined : query ? shownMenu.map((group) => group.key) : openKeys}
           onOpenChange={setOpenKeys}
           items={menuItems}
           onClick={({ key }) => {

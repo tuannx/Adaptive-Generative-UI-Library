@@ -9,12 +9,12 @@ import {
   DatePicker,
   Button,
   Space,
-  message,
-  Spin,
   Alert,
+    Skeleton,
   type FormItemProps,
+  App,
 } from 'antd';
-import { SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons';
+import { SaveOutlined, ArrowLeftOutlined, PlusOutlined, MinusCircleOutlined } from '@ant-design/icons';
 import { useLocation, useParams } from 'react-router-dom';
 import useSWR from 'swr';
 import dayjs, { type Dayjs } from 'dayjs';
@@ -31,10 +31,11 @@ import type { AgulFieldPlugin } from '../plugins/types.js';
 import { useAgulFetcher, useAgulNavigate, useAgulRuntime, useRevalidateList } from '../runtime.js';
 import { FormWizardLayout } from './FormWizardLayout.js';
 import { encodeBody } from '../http/encode.js';
+import { describeApiError } from '../http/errors.js';
 import { formatLabel, unwrapRecord } from './format.js';
 
 type Row = Record<string, unknown>;
-type NamePath = string[];
+type NamePath = (string | number)[];
 
 interface FormViewProps {
   resource: Resource;
@@ -54,7 +55,10 @@ export const FormView: React.FC<FormViewProps> = ({ resource, mode }) => {
   const params = useParams();
   const location = useLocation();
   const [form] = Form.useForm();
+  const { message, modal } = App.useApp();
   const [submitting, setSubmitting] = React.useState(false);
+  const [dirty, setDirty] = React.useState(false);
+  useLeaveGuard(dirty);
 
   const seedRecord = (location.state as { record?: Row } | null)?.record;
   const fetchUrl =
@@ -73,9 +77,24 @@ export const FormView: React.FC<FormViewProps> = ({ resource, mode }) => {
   const schema = operation.schema;
   const wizard = React.useMemo(() => (schema ? readWizardConfig(schema) : null), [schema]);
 
-  const handleBack = () => {
+  const leave = () => {
     if (resource.paths.list) navigate(buildRouterPath(resource.paths.list, params));
     else navigate(-1);
+  };
+
+  const handleBack = () => {
+    if (!dirty) return leave();
+    modal.confirm({
+      title: 'Discard your changes?',
+      content: "What you typed in this form hasn't been saved.",
+      okText: 'Discard',
+      okButtonProps: { danger: true },
+      cancelText: 'Keep editing',
+      onOk: () => {
+        setDirty(false);
+        leave();
+      },
+    });
   };
 
   const handleSubmit = async (values: Row) => {
@@ -93,6 +112,7 @@ export const FormView: React.FC<FormViewProps> = ({ resource, mode }) => {
           : undefined,
       });
       message.success(isEdit ? 'Updated successfully' : 'Created successfully');
+      setDirty(false);
       await revalidate(params);
 
       if (resource.paths.list) {
@@ -106,7 +126,12 @@ export const FormView: React.FC<FormViewProps> = ({ resource, mode }) => {
       if (detailPath && !detailPath.includes(':')) navigate(detailPath);
       else if (!isEdit) form.resetFields();
     } catch (err) {
-      message.error(`${isEdit ? 'Update' : 'Create'} failed: ${err instanceof Error ? err.message : String(err)}`);
+      const info = describeApiError(err);
+      if (info.fieldErrors.length > 0) {
+        form.setFields(info.fieldErrors.map((field) => ({ name: field.name, errors: field.errors })));
+        form.scrollToField(info.fieldErrors[0].name);
+      }
+      message.error(`${isEdit ? 'Update' : 'Create'} failed — ${info.message}`);
     } finally {
       setSubmitting(false);
     }
@@ -115,12 +140,10 @@ export const FormView: React.FC<FormViewProps> = ({ resource, mode }) => {
   const renderFields = (visibleFields?: Set<string>) =>
     schema ? renderObjectFields(schema, [], { schemas, plugins, visibleFields, topLevel: true }) : [];
 
-  if (isLoading) {
+  if (isLoading && !existing) {
     return (
       <Card>
-        <div style={{ textAlign: 'center', padding: 50 }}>
-          <Spin size="large" />
-        </div>
+        <Skeleton active paragraph={{ rows: 6 }} />
       </Card>
     );
   }
@@ -141,6 +164,8 @@ export const FormView: React.FC<FormViewProps> = ({ resource, mode }) => {
           layout="vertical"
           preserve
           onFinish={handleSubmit}
+          onValuesChange={() => setDirty(true)}
+          scrollToFirstError
           initialValues={isEdit ? undefined : schemaDefaults(schema)}
           style={{ maxWidth: 800 }}
         >
@@ -186,6 +211,19 @@ export const FormView: React.FC<FormViewProps> = ({ resource, mode }) => {
     </Card>
   );
 };
+
+/** Asks before closing or reloading the tab while a form has unsaved changes. */
+function useLeaveGuard(active: boolean) {
+  React.useEffect(() => {
+    if (!active) return;
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [active]);
+}
 
 /** `default` values of an object schema's properties (nested objects included), as form initial values. */
 export function schemaDefaults(schema: SchemaObject | undefined): Record<string, unknown> {
@@ -241,9 +279,10 @@ function renderField(
   required: boolean,
   options: RenderOptions,
 ): React.ReactNode {
-  const name = namePath[namePath.length - 1];
+  const name = String(namePath[namePath.length - 1]);
   const label = formatLabel(name);
   const key = namePath.join('.');
+  const parent = namePath[namePath.length - 2];
 
   if (options.topLevel) {
     const context = { name, schema, label, required, schemas: options.schemas };
@@ -262,7 +301,39 @@ function renderField(
   }
 
   if (schema.type === 'array' && schema.items && (schema.items.type === 'object' || schema.items.properties)) {
-    return null;
+    const itemSchema = schema.items;
+    if (!itemSchema.properties) return null;
+    const itemLabel = label.replace(/s$/i, '') || label;
+    return (
+      <Form.List key={key} name={namePath}>
+        {(fields, { add, remove }) => (
+          <fieldset
+            data-testid={`agul-form-list-${key}`}
+            style={{ border: '1px solid #f0f0f0', borderRadius: 8, padding: '8px 16px', marginBottom: 24 }}
+          >
+            <legend style={{ width: 'auto', fontSize: 14, padding: '0 8px', margin: 0, border: 0 }}>
+              {label} {fields.length > 0 && <span style={{ color: '#999' }}>({fields.length})</span>}
+            </legend>
+            {fields.map((field, index) => (
+              <div key={field.key} style={{ borderBottom: '1px dashed #f0f0f0', marginBottom: 12, paddingBottom: 4 }}>
+                <Space style={{ width: '100%', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <span style={{ color: '#666' }}>
+                    {itemLabel} #{index + 1}
+                  </span>
+                  <Button type="text" danger size="small" icon={<MinusCircleOutlined />} onClick={() => remove(field.name)}>
+                    Remove
+                  </Button>
+                </Space>
+                {renderObjectFields(itemSchema, [field.name], { ...options, topLevel: false, visibleFields: undefined })}
+              </div>
+            ))}
+            <Button type="dashed" block icon={<PlusOutlined />} onClick={() => add(schemaDefaults(itemSchema))} style={{ marginBottom: 12 }}>
+              Add {itemLabel.toLowerCase()}
+            </Button>
+          </fieldset>
+        )}
+      </Form.List>
+    );
   }
 
   const { rules: extraRules = [], ...behaviour } = fieldBehaviour(schema);
@@ -272,14 +343,39 @@ function renderField(
     <Form.Item
       key={key}
       name={namePath}
-      label={namePath.length > 1 ? `${formatLabel(namePath[namePath.length - 2])} ${label.toLowerCase()}` : label}
+      label={typeof parent === 'string' ? `${formatLabel(parent)} ${label.toLowerCase()}` : label}
       tooltip={schema.description}
-      rules={[...requiredRule, ...extraRules]}
+      rules={[...requiredRule, ...constraintRules(schema, label), ...extraRules]}
       {...behaviour}
     >
       {renderControl(schema, name, label)}
     </Form.Item>
   );
+}
+
+/** Validation rules from JSON Schema constraints (`minLength`, `pattern`, `minimum`, ...). */
+function constraintRules(schema: SchemaObject, label: string): NonNullable<FormItemProps['rules']> {
+  const rules: NonNullable<FormItemProps['rules']> = [];
+  if (schema.type === 'string' || (!schema.type && (schema.minLength !== undefined || schema.maxLength !== undefined))) {
+    if (schema.minLength !== undefined) rules.push({ min: schema.minLength, message: `${label} needs at least ${schema.minLength} characters` });
+    if (schema.maxLength !== undefined) rules.push({ max: schema.maxLength, message: `${label} can have at most ${schema.maxLength} characters` });
+  }
+  if (schema.pattern) {
+    try {
+      rules.push({ pattern: new RegExp(schema.pattern), message: `${label} has the wrong format` });
+    } catch {
+      // a pattern JavaScript can't compile is left to the server
+    }
+  }
+  if (schema.type === 'integer' || schema.type === 'number') {
+    if (schema.minimum !== undefined) rules.push({ type: 'number', min: schema.minimum, message: `${label} must be at least ${schema.minimum}` });
+    if (schema.maximum !== undefined) rules.push({ type: 'number', max: schema.maximum, message: `${label} must be at most ${schema.maximum}` });
+  }
+  if (schema.type === 'array') {
+    if (schema.minItems !== undefined) rules.push({ type: 'array', min: schema.minItems, message: `Pick at least ${schema.minItems}` });
+    if (schema.maxItems !== undefined) rules.push({ type: 'array', max: schema.maxItems, message: `Pick at most ${schema.maxItems}` });
+  }
+  return rules;
 }
 
 function fieldBehaviour(schema: SchemaObject): Partial<FormItemProps> {
@@ -313,6 +409,8 @@ function renderControl(schema: SchemaObject, name: string, label: string): React
           style={{ width: '100%' }}
           placeholder={`Enter ${label}`}
           precision={schema.type === 'integer' ? 0 : undefined}
+          min={schema.minimum}
+          max={schema.maximum}
         />
       );
     case 'boolean':
@@ -334,5 +432,6 @@ function renderControl(schema: SchemaObject, name: string, label: string): React
   if (/description|comment|notes?|bio|body|content/i.test(name)) {
     return <Input.TextArea rows={4} placeholder={`Enter ${label}`} />;
   }
-  return <Input placeholder={`Enter ${label}`} type={schema.format === 'password' ? 'password' : undefined} />;
+  if (schema.format === 'password' || schema.writeOnly) return <Input.Password placeholder={`Enter ${label}`} autoComplete="new-password" />;
+  return <Input placeholder={`Enter ${label}`} maxLength={schema.maxLength} showCount={!!schema.maxLength && schema.maxLength <= 500} />;
 }

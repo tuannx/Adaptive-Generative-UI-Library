@@ -1,6 +1,6 @@
 import React from 'react';
-import { Table, Button, Space, message, Popconfirm, Card, Input, Select, Alert, type TableColumnsType } from 'antd';
-import { EyeOutlined, EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
+import { Table, Button, Space, Popconfirm, Card, Input, Select, Alert, Empty, Tooltip, type TableColumnsType, App } from 'antd';
+import { EyeOutlined, EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined, ReloadOutlined } from '@ant-design/icons';
 import { useParams } from 'react-router-dom';
 import useSWR from 'swr';
 import {
@@ -18,6 +18,7 @@ import {
   type Resource,
 } from '@agul/core';
 import { useAgulNavigate, useAgulRuntime, useRevalidateList } from '../runtime.js';
+import { describeApiError } from '../http/errors.js';
 import { formatCellValue, formatLabel, unwrapList } from './format.js';
 
 type Row = Record<string, unknown>;
@@ -32,6 +33,10 @@ interface ListPage {
 }
 
 const MAX_COLUMNS = 6;
+const SEARCH_DEBOUNCE_MS = 300;
+
+/** List state per list (resource + path params), kept for the session so "back" returns to the same page. */
+const rememberedState = new Map<string, ListQueryState>();
 
 function toListPage(body: unknown, totalHeader: unknown, rowsPath: string[] = []): ListPage {
   const located = rowsPath.reduce<unknown>(
@@ -47,12 +52,30 @@ function toListPage(body: unknown, totalHeader: unknown, rowsPath: string[] = []
   };
 }
 
+function useDebounced<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = React.useState(value);
+  React.useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+  return debounced;
+}
+
+function compareValues(a: unknown, b: unknown): number {
+  if (a === b) return 0;
+  if (a === undefined || a === null) return 1;
+  if (b === undefined || b === null) return -1;
+  if (typeof a === 'number' && typeof b === 'number') return a - b;
+  return String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: 'base' });
+}
+
 export const ListView: React.FC<ListViewProps> = ({ resource }) => {
   const list = resource.list!;
   const { baseUrl, http } = useAgulRuntime();
   const navigate = useAgulNavigate();
   const revalidate = useRevalidateList(resource);
   const routeParams = useParams();
+  const { message } = App.useApp();
 
   const queryBindings = React.useMemo(
     () => withFallbackPagination(parseListQueryBindings(list.parameters)),
@@ -62,13 +85,26 @@ export const ListView: React.FC<ListViewProps> = ({ resource }) => {
   const searchBinding = queryBindings.find((b) => b.role === 'search');
   const filterBindings = queryBindings.filter((b) => b.role === 'filter');
 
-  const [queryState, setQueryState] = React.useState<ListQueryState>(() =>
-    getDefaultListQueryState(queryBindings),
+  const stateKey = `${resource.key}|${JSON.stringify(routeParams)}`;
+  const [queryState, setQueryState] = React.useState<ListQueryState>(
+    () => rememberedState.get(stateKey) ?? getDefaultListQueryState(queryBindings),
   );
+  React.useEffect(() => {
+    rememberedState.set(stateKey, queryState);
+  }, [stateKey, queryState]);
+  const [selectedKeys, setSelectedKeys] = React.useState<React.Key[]>([]);
+  const [bulkDeleting, setBulkDeleting] = React.useState(false);
 
-  const listUrl = buildListApiUrl(baseUrl, list.apiEndpoint, queryBindings, queryState, routeParams);
-  const { data, error, isLoading } = useSWR(listUrl, (url: string) =>
-    http.get(url).then((res) => toListPage(res.data, res.headers['x-total-count'], list.rowsPath)),
+  // typing in server-side search or text filters waits for a pause before querying
+  const requestState = useDebounced(queryState, SEARCH_DEBOUNCE_MS);
+  const effectiveState =
+    requestState.page === queryState.page && requestState.pageSize === queryState.pageSize ? requestState : queryState;
+
+  const listUrl = buildListApiUrl(baseUrl, list.apiEndpoint, queryBindings, effectiveState, routeParams);
+  const { data, error, isLoading, isValidating, mutate } = useSWR(
+    listUrl,
+    (url: string) => http.get(url).then((res) => toListPage(res.data, res.headers['x-total-count'], list.rowsPath)),
+    { keepPreviousData: true },
   );
 
   const rows = React.useMemo(
@@ -86,7 +122,7 @@ export const ListView: React.FC<ListViewProps> = ({ resource }) => {
       searchBinding || !query
         ? rows
         : rows.filter((row) =>
-            Object.values(row).some((value) => String(value).toLowerCase().includes(query)),
+            Object.values(row).some((value) => value !== null && typeof value !== 'object' && String(value).toLowerCase().includes(query)),
           );
     if (hasServerPagination) return searched;
     const start = (queryState.page - 1) * queryState.pageSize;
@@ -100,37 +136,75 @@ export const ListView: React.FC<ListViewProps> = ({ resource }) => {
         (rows.length === queryState.pageSize ? 1 : 0)
     : searchBinding || !queryState.search.trim()
       ? rows.length
-      : visibleRows.length;
+      : rows.filter((row) =>
+          Object.values(row).some(
+            (value) => value !== null && typeof value !== 'object' && String(value).toLowerCase().includes(queryState.search.trim().toLowerCase()),
+          ),
+        ).length;
 
-  const handleDelete = async (record: Row) => {
-    const remove = resource.remove!;
-    const pathParams = { ...routeParams, ...buildPathParamsFromRecord(remove.apiEndpoint, record) };
-    try {
+  const deleteRecord = React.useCallback(
+    async (record: Row) => {
+      const remove = resource.remove!;
+      const pathParams = { ...routeParams, ...buildPathParamsFromRecord(remove.apiEndpoint, record) };
       await http.delete(buildApiUrl(baseUrl, remove.apiEndpoint, pathParams));
-      message.success('Deleted successfully');
-      await revalidate(routeParams);
-    } catch (err) {
-      message.error(`Delete failed: ${err instanceof Error ? err.message : String(err)}`);
+    },
+    [resource.remove, routeParams, http, baseUrl],
+  );
+
+  const handleDelete = React.useCallback(
+    async (record: Row) => {
+      try {
+        await deleteRecord(record);
+        message.success('Deleted');
+        setSelectedKeys((keys) => keys.filter((key) => key !== record.key));
+        await revalidate(routeParams);
+      } catch (err) {
+        message.error(`Delete failed — ${describeApiError(err).message}`);
+      }
+    },
+    [deleteRecord, revalidate, routeParams, message],
+  );
+
+  const handleBulkDelete = async () => {
+    const targets = rows.filter((row) => selectedKeys.includes(row.key as string));
+    setBulkDeleting(true);
+    const failures: string[] = [];
+    for (const record of targets) {
+      try {
+        await deleteRecord(record);
+      } catch (err) {
+        failures.push(`${String(record.key)}: ${describeApiError(err).message}`);
+      }
     }
+    setBulkDeleting(false);
+    setSelectedKeys([]);
+    await revalidate(routeParams);
+    if (failures.length === 0) message.success(`Deleted ${targets.length} item${targets.length === 1 ? '' : 's'}`);
+    else message.error(`${failures.length} of ${targets.length} deletes failed — ${failures[0]}`);
   };
 
-  const goToRecord = (path: string | undefined, record: Row) => {
-    if (!path) return;
-    const target = buildRouterPath(path, { ...routeParams, ...record });
-    if (!target.includes(':')) navigate(target, { state: { record } });
-  };
+  const goToRecord = React.useCallback(
+    (path: string | undefined, record: Row) => {
+      if (!path) return;
+      const target = buildRouterPath(path, { ...routeParams, ...record });
+      if (!target.includes(':')) navigate(target, { state: { record } });
+    },
+    [routeParams, navigate],
+  );
 
   const columns = React.useMemo<TableColumnsType<Row>>(() => {
     const properties = resource.recordSchema?.properties;
+    const sample = rows[0];
     const keys = properties
       ? Object.keys(properties).filter((key) => isPrimitiveSchema(properties[key]))
-      : Object.keys(rows[0] ?? {}).filter((key) => key !== 'key' && typeof rows[0][key] !== 'object');
+      : Object.keys(sample ?? {}).filter((key) => key !== 'key' && (sample[key] === null || typeof sample[key] !== 'object'));
 
     const dataColumns: TableColumnsType<Row> = keys.slice(0, MAX_COLUMNS).map((key) => ({
       title: formatLabel(key),
       dataIndex: key,
       key,
       ellipsis: true,
+      sorter: (a: Row, b: Row) => compareValues(a[key], b[key]),
       render: (value: unknown) => formatCellValue(value),
     }));
 
@@ -142,9 +216,10 @@ export const ListView: React.FC<ListViewProps> = ({ resource }) => {
       {
         title: 'Actions',
         key: 'actions',
+        fixed: 'right',
         width: 220,
         render: (_: unknown, record: Row) => (
-          <Space size="small">
+          <Space size="small" onClick={(event) => event.stopPropagation()}>
             {paths.detail && (
               <Button
                 type="link"
@@ -169,9 +244,11 @@ export const ListView: React.FC<ListViewProps> = ({ resource }) => {
             )}
             {remove && (
               <Popconfirm
-                title="Are you sure you want to delete this item?"
+                title="Delete this item?"
+                description="This can't be undone."
                 onConfirm={() => handleDelete(record)}
                 okText="Yes"
+                okButtonProps={{ danger: true }}
                 cancelText="No"
               >
                 <Button
@@ -189,28 +266,21 @@ export const ListView: React.FC<ListViewProps> = ({ resource }) => {
         ),
       },
     ];
-  }, [resource, rows, routeParams, baseUrl, http, navigate, revalidate]);
+  }, [resource, rows, goToRecord, handleDelete]);
 
   const updateQueryState = (patch: Partial<ListQueryState>) => {
     setQueryState((current) => ({ ...current, page: 1, ...patch }));
   };
 
+  const createButton = resource.paths.create && (
+    <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate(buildRouterPath(resource.paths.create!, routeParams))}>
+      Create New
+    </Button>
+  );
+  const filtered = !!queryState.search.trim() || Object.values(queryState.filters).some(Boolean);
+
   return (
-    <Card
-      data-testid="agul-list-view"
-      title={resource.label}
-      extra={
-        resource.paths.create && (
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => navigate(buildRouterPath(resource.paths.create!, routeParams))}
-          >
-            Create New
-          </Button>
-        )
-      }
-    >
+    <Card data-testid="agul-list-view" title={resource.label} extra={createButton}>
       <Space wrap style={{ marginBottom: 16 }}>
         <Input
           allowClear
@@ -226,25 +296,74 @@ export const ListView: React.FC<ListViewProps> = ({ resource }) => {
             key={binding.name}
             binding={binding}
             value={queryState.filters[binding.name]}
-            onChange={(value) =>
-              updateQueryState({ filters: { ...queryState.filters, [binding.name]: value } })
-            }
+            onChange={(value) => updateQueryState({ filters: { ...queryState.filters, [binding.name]: value } })}
           />
         ))}
+        <Tooltip title="Refresh">
+          <Button icon={<ReloadOutlined spin={isValidating && !isLoading} />} onClick={() => mutate()} data-testid="agul-list-refresh" />
+        </Tooltip>
+        {resource.remove && selectedKeys.length > 0 && (
+          <Popconfirm
+            title={`Delete ${selectedKeys.length} selected item${selectedKeys.length === 1 ? '' : 's'}?`}
+            description="This can't be undone."
+            onConfirm={handleBulkDelete}
+            okText="Delete"
+            okButtonProps={{ danger: true }}
+          >
+            <Button danger icon={<DeleteOutlined />} loading={bulkDeleting} data-testid="agul-list-bulk-delete">
+              Delete selected ({selectedKeys.length})
+            </Button>
+          </Popconfirm>
+        )}
       </Space>
-      {error ? (
+      {error && (
         <Alert
+          style={{ marginBottom: 16 }}
           type="error"
           showIcon
           message="Failed to load data"
-          description={error instanceof Error ? error.message : String(error)}
+          description={describeApiError(error).message}
+          action={
+            <Button size="small" onClick={() => mutate()}>
+              Retry
+            </Button>
+          }
         />
-      ) : (
+      )}
+      {(!error || data) && (
         <Table
           data-testid="agul-list-table"
           columns={columns}
           dataSource={visibleRows}
           loading={isLoading}
+          rowSelection={
+            resource.remove ? { selectedRowKeys: selectedKeys, onChange: setSelectedKeys, preserveSelectedRowKeys: false } : undefined
+          }
+          onRow={(record) =>
+            resource.paths.detail
+              ? { onDoubleClick: () => goToRecord(resource.paths.detail, record), style: { cursor: 'pointer' } }
+              : {}
+          }
+          locale={{
+            emptyText: isLoading ? (
+              <div style={{ height: 120 }} />
+            ) : (
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description={filtered ? 'Nothing matches the search or filters' : `No ${resource.label.toLowerCase()} yet`}
+              >
+                {filtered ? (
+                  <Button onClick={() => updateQueryState({ search: '', filters: {} })}>Clear filters</Button>
+                ) : (
+                  resource.paths.create && (
+                    <Button icon={<PlusOutlined />} onClick={() => navigate(buildRouterPath(resource.paths.create!, routeParams))}>
+                      Add the first one
+                    </Button>
+                  )
+                )}
+              </Empty>
+            ),
+          }}
           pagination={{
             current: queryState.page,
             pageSize: queryState.pageSize,
@@ -271,16 +390,17 @@ function FilterControl({
   onChange: (value: string) => void;
 }) {
   const label = formatLabel(binding.name);
+  const options = binding.schema?.enum ?? (binding.schema?.type === 'boolean' ? ['true', 'false'] : undefined);
 
-  if (binding.schema?.enum?.length) {
+  if (options?.length) {
     return (
       <Select
         allowClear
-        value={value}
+        value={value || undefined}
         placeholder={label}
         data-testid={`agul-list-filter-${binding.name}`}
         style={{ minWidth: 160 }}
-        options={binding.schema.enum.map((option) => ({ value: String(option), label: String(option) }))}
+        options={options.map((option) => ({ value: String(option), label: String(option) }))}
         onChange={(next) => onChange(next ?? '')}
       />
     );

@@ -105,6 +105,7 @@ test.describe('AGUL Demo — real-world spec shapes', () => {
     await expect(page.getByTestId('agul-list-table')).toContainText('ada');
 
     await page.getByTestId('agul-list-view').getByRole('button', { name: 'Create New' }).click();
+    await expect(page.getByTestId('agul-form-view')).toBeVisible();
     await page.getByLabel('Login').fill('grace');
     await page.getByTestId('agul-form-submit').click();
 

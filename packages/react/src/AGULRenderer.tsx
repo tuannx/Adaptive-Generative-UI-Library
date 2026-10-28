@@ -8,7 +8,7 @@ import {
   useLocation,
   useParams,
 } from 'react-router-dom';
-import { Alert, Button, ConfigProvider, Result, Space, Spin, Tag, Tooltip, message } from 'antd';
+import { Alert, App as AntdApp, Button, ConfigProvider, Result, Space, Spin, Tag, Tooltip } from 'antd';
 import { useSWRConfig } from 'swr';
 import {
   generateRoutes,
@@ -109,7 +109,10 @@ export function AGULRenderer({ basename, primaryColor = '#1890ff', ...props }: A
   const inRouter = useInRouterContext();
   const app = (
     <ConfigProvider theme={{ token: { colorPrimary: primaryColor } }}>
-      <AGULApp {...props} embedded={inRouter} />
+      {/* antd's App context makes message / modal work under React 19, where the static helpers render nothing */}
+      <AntdApp component={false}>
+        <AGULApp {...props} embedded={inRouter} />
+      </AntdApp>
     </ConfigProvider>
   );
 
@@ -143,6 +146,7 @@ function AGULApp({
   const http = React.useMemo(() => createAgulHttp(() => auth.current, () => proxy.current), [auth, proxy]);
   const agulFetch = React.useMemo(() => createAgulFetch(() => auth.current, () => proxy.current), [auth, proxy]);
   const { mutate } = useSWRConfig();
+  const { message } = AntdApp.useApp();
   const onReadyRef = useLatest(onReady);
   const onErrorRef = useLatest(onError);
 
@@ -181,7 +185,7 @@ function AGULApp({
       onErrorRef.current?.(state.error);
       message.error(state.error.message);
     }
-  }, [state, onReadyRef, onErrorRef]);
+  }, [state, onReadyRef, onErrorRef, message]);
 
   const decided = useProviderDecisions(
     state.status === 'ready' ? state.api : undefined,
