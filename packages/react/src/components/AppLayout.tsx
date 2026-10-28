@@ -54,7 +54,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, menu, apiTitle =
     .filter((item) => matchPath({ path: item.key, end: false }, currentPath))
     .sort((a, b) => b.key.length - a.key.length)[0];
   const openGroup = menu.find((group) => group.children?.includes(selected!))?.key;
-  const [openKeys, setOpenKeys] = useState<string[]>(() => (openGroup ? [openGroup] : menu.slice(0, 1).map((group) => group.key)));
+  // small menus start fully open; large ones (hundreds of operations) only show the current group
+  const [openKeys, setOpenKeys] = useState<string[]>(() =>
+    items.length <= 15 ? menu.map((group) => group.key) : openGroup ? [openGroup] : menu.slice(0, 1).map((group) => group.key),
+  );
   React.useEffect(() => {
     if (openGroup) setOpenKeys((keys) => (keys.includes(openGroup) ? keys : [...keys, openGroup]));
   }, [openGroup]);

@@ -10,6 +10,29 @@ export interface ParsedAPI {
   endpoints: ParsedEndpoint[];
   schemas: Record<string, SchemaObject>;
   tags: string[];
+  /** `components.securitySchemes` (Swagger 2.0 `securityDefinitions` converted). */
+  securitySchemes: Record<string, SecurityScheme>;
+}
+
+export type SecurityScheme =
+  | { type: 'apiKey'; name: string; in: 'header' | 'query' | 'cookie'; description?: string }
+  | { type: 'http'; scheme: string; bearerFormat?: string; description?: string }
+  | { type: 'oauth2'; flows: OAuthFlows; description?: string }
+  | { type: 'openIdConnect'; openIdConnectUrl: string; description?: string }
+  | { type: 'mutualTLS'; description?: string };
+
+export interface OAuthFlow {
+  authorizationUrl?: string;
+  tokenUrl?: string;
+  refreshUrl?: string;
+  scopes: Record<string, string>;
+}
+
+export interface OAuthFlows {
+  implicit?: OAuthFlow;
+  password?: OAuthFlow;
+  clientCredentials?: OAuthFlow;
+  authorizationCode?: OAuthFlow;
 }
 
 export interface ParsedEndpoint {
@@ -22,6 +45,7 @@ export interface ParsedEndpoint {
   parameters?: ParameterObject[];
   requestBody?: RequestBodyObject;
   responses: Record<string, ResponseObject>;
+  /** Effective security: the operation's own, else the document's. `[]` or a `{}` entry means public. */
   security?: SecurityRequirement[];
   deprecated?: boolean;
   /** `x-*` vendor extensions on the operation, e.g. `x-agul-view`. */

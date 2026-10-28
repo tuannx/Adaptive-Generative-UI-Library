@@ -9,8 +9,10 @@ import type {
   SchemaObject,
   ParameterObject,
   RequestBodyObject,
-  ResponseObject
+  ResponseObject,
+  SecurityScheme,
 } from './types.js';
+import { normalizeSecuritySchemes } from './security.js';
 
 /**
  * Parse OpenAPI 3.0 or Swagger 2.0 specification
@@ -49,7 +51,8 @@ export function parseOpenAPISync(spec: any): ParsedAPI {
     baseUrl,
     endpoints,
     schemas,
-    tags
+    tags,
+    securitySchemes: normalizeSecuritySchemes(normalized.components?.securitySchemes),
   };
 }
 
@@ -96,8 +99,10 @@ function convertSwagger2to3(swagger2: any): any {
     info: swagger2.info,
     servers: [],
     paths: {},
+    security: swagger2.security,
     components: {
-      schemas: swagger2.definitions || {}
+      schemas: swagger2.definitions || {},
+      securitySchemes: convertSecurityDefinitions(swagger2.securityDefinitions),
     }
   };
 
@@ -182,6 +187,38 @@ function convertSwagger2to3(swagger2: any): any {
   return openapi3;
 }
 
+function convertSecurityDefinitions(definitions: Record<string, any> | undefined): Record<string, SecurityScheme> {
+  const flowNames: Record<string, string> = {
+    implicit: 'implicit',
+    password: 'password',
+    application: 'clientCredentials',
+    accessCode: 'authorizationCode',
+  };
+  return Object.fromEntries(
+    Object.entries(definitions ?? {}).map(([name, definition]) => {
+      if (definition?.type === 'basic') return [name, { type: 'http', scheme: 'basic', description: definition.description }];
+      if (definition?.type === 'oauth2') {
+        const flow = flowNames[definition.flow] ?? 'implicit';
+        return [
+          name,
+          {
+            type: 'oauth2',
+            description: definition.description,
+            flows: {
+              [flow]: {
+                authorizationUrl: definition.authorizationUrl,
+                tokenUrl: definition.tokenUrl,
+                scopes: definition.scopes ?? {},
+              },
+            },
+          },
+        ];
+      }
+      return [name, definition];
+    }),
+  ) as Record<string, SecurityScheme>;
+}
+
 /**
  * Extract base URL from spec
  */
@@ -263,7 +300,7 @@ function parseEndpoints(spec: any): ParsedEndpoint[] {
           parameters,
           requestBody: resolveLocalRef(spec, operation.requestBody) as RequestBodyObject,
           responses: responses as Record<string, ResponseObject>,
-          security: operation.security,
+          security: operation.security ?? spec.security,
           deprecated: operation.deprecated === true || undefined,
           extensions: pickExtensions(operation),
         });

@@ -2,6 +2,7 @@ import type { HttpMethod, MenuItem, ParameterObject, ParsedAPI, ParsedEndpoint, 
 import { getRequestSchema, getResponseSchema } from './parser.js';
 import { buildMenu, buildResources, type Resource } from './resources.js';
 import { dereferenceSchema, findListRows } from './schema.js';
+import { canAccessEndpoint, type AccessGrants } from './security.js';
 
 /**
  * How an operation is presented:
@@ -453,18 +454,35 @@ function humanizeOperation(endpoint: ParsedEndpoint): string {
     .replace(/^./, (char) => char.toUpperCase());
 }
 
+export interface PlanOptions {
+  /** What the signed-in user may do; operations they can't call are left out of pages, buttons and menu. */
+  grants?: AccessGrants;
+}
+
 /** Turns decisions into resources (CRUD pages), operation pages (action/chat) and the menu. */
-export function planUi(api: ParsedAPI, decisions: Map<string, UiDecision> = heuristicDecisions(api)): UiPlan {
+export function planUi(
+  api: ParsedAPI,
+  decisions: Map<string, UiDecision> = heuristicDecisions(api),
+  options: PlanOptions = {},
+): UiPlan {
   const nonCrud = new Set(
     [...decisions.values()].filter((decision) => decision.kind !== 'crud').map((decision) => decision.operationId),
   );
-  const resources = buildResources(api, { exclude: nonCrud });
+  const byId = new Map(api.endpoints.map((endpoint) => [endpoint.operationId, endpoint]));
+  const allowed = (operationId: string | undefined) => {
+    const endpoint = operationId ? byId.get(operationId) : undefined;
+    return !endpoint || canAccessEndpoint(endpoint, api.securitySchemes ?? {}, options.grants);
+  };
+  const resources = buildResources(api, { exclude: nonCrud })
+    .map((resource) => (options.grants ? restrictResource(resource, allowed) : resource))
+    .filter((resource): resource is Resource => !!resource);
   const used = new Set<string>();
 
   const pages: OperationPage[] = [];
   for (const endpoint of api.endpoints) {
     const decision = decisions.get(endpoint.operationId);
     if (!decision || (decision.kind !== 'action' && decision.kind !== 'chat')) continue;
+    if (!allowed(endpoint.operationId)) continue;
     let path = `/_/${slug(endpoint.operationId)}`;
     while (used.has(path)) path += '-';
     used.add(path);
@@ -495,6 +513,25 @@ export function planUi(api: ParsedAPI, decisions: Map<string, UiDecision> = heur
     .sort((a, b) => a.rank - b.rank)
     .map(({ group }) => group);
   return { decisions, resources, pages, menu };
+}
+
+/** Drops the operations (and their pages) the user may not call; `undefined` when nothing is left. */
+function restrictResource(resource: Resource, allowed: (operationId: string | undefined) => boolean): Resource | undefined {
+  const keep = <T extends { operationId: string }>(operation: T | undefined) =>
+    operation && allowed(operation.operationId) ? operation : undefined;
+  const list = keep(resource.list);
+  const detail = keep(resource.detail);
+  const create = keep(resource.create);
+  const update = keep(resource.update);
+  const remove = keep(resource.remove);
+  const paths = {
+    list: list ? resource.paths.list : undefined,
+    detail: detail ? resource.paths.detail : undefined,
+    create: create ? resource.paths.create : undefined,
+    edit: update ? resource.paths.edit : undefined,
+  };
+  if (!paths.list && !paths.detail && !paths.create && !paths.edit) return undefined;
+  return { ...resource, list, detail, create, update, remove, paths };
 }
 
 /** CRUD menu plus action/chat pages, grouped by tag; chat pages first in their group. */

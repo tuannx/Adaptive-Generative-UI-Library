@@ -1,0 +1,167 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Helpdesk API",
+    "version": "1.2.0",
+    "description": "Secured sample: OpenID Connect sign-in, OAuth scopes per operation and admin-only operations (x-agul-roles)."
+  },
+  "servers": [{ "url": "/mock/helpdesk/api" }],
+  "security": [{ "helpdeskId": ["tickets:read"] }, { "serviceKey": [] }],
+  "tags": [
+    { "name": "tickets", "description": "Support tickets" },
+    { "name": "account", "description": "Who am I" },
+    { "name": "admin", "description": "Administration" }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["admin"],
+        "operationId": "health",
+        "summary": "Health check",
+        "security": [],
+        "x-agul-view": "hidden",
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/me": {
+      "get": {
+        "tags": ["account"],
+        "operationId": "getMe",
+        "summary": "My profile",
+        "security": [{ "helpdeskId": [] }, { "serviceKey": [] }],
+        "responses": {
+          "200": { "description": "The signed-in user", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Profile" } } } }
+        }
+      }
+    },
+    "/tickets": {
+      "get": {
+        "tags": ["tickets"],
+        "operationId": "listTickets",
+        "summary": "Tickets",
+        "parameters": [
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["open", "pending", "closed"] } },
+          { "name": "q", "in": "query", "description": "Search title and requester", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Tickets", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Ticket" } } } } }
+        }
+      },
+      "post": {
+        "tags": ["tickets"],
+        "operationId": "createTicket",
+        "summary": "Open a ticket",
+        "security": [{ "helpdeskId": ["tickets:write"] }, { "serviceKey": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TicketInput" } } } },
+        "responses": {
+          "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Ticket" } } } },
+          "422": { "description": "Invalid ticket" }
+        }
+      }
+    },
+    "/tickets/{id}": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+      "get": {
+        "tags": ["tickets"],
+        "operationId": "getTicket",
+        "summary": "Ticket",
+        "responses": {
+          "200": { "description": "Ticket", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Ticket" } } } },
+          "404": { "description": "Not found" }
+        }
+      },
+      "patch": {
+        "tags": ["tickets"],
+        "operationId": "updateTicket",
+        "summary": "Update ticket",
+        "security": [{ "helpdeskId": ["tickets:write"] }, { "serviceKey": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TicketInput" } } } },
+        "responses": {
+          "200": { "description": "Updated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Ticket" } } } }
+        }
+      },
+      "delete": {
+        "tags": ["tickets"],
+        "operationId": "deleteTicket",
+        "summary": "Delete ticket",
+        "x-agul-roles": ["admin"],
+        "responses": { "204": { "description": "Deleted" }, "403": { "description": "Admins only" } }
+      }
+    },
+    "/users": {
+      "get": {
+        "tags": ["admin"],
+        "operationId": "listUsers",
+        "summary": "Users",
+        "security": [{ "helpdeskId": ["users:read"] }, { "serviceKey": [] }],
+        "responses": {
+          "200": { "description": "Users", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/User" } } } } }
+        }
+      }
+    },
+    "/admin/reindex": {
+      "post": {
+        "tags": ["admin"],
+        "operationId": "reindexTickets",
+        "summary": "Rebuild search index",
+        "x-agul-roles": ["admin"],
+        "responses": {
+          "200": { "description": "Done", "content": { "application/json": { "schema": { "type": "object", "properties": { "reindexed": { "type": "integer" }, "took_ms": { "type": "integer" } } } } } }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "helpdeskId": {
+        "type": "openIdConnect",
+        "openIdConnectUrl": "/mock/helpdesk/.well-known/openid-configuration",
+        "description": "Sign in with Helpdesk ID (demo users: Lan = admin, Minh = agent, Vy = viewer)."
+      },
+      "serviceKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "Service accounts. Demo key: demo-service-key"
+      }
+    },
+    "schemas": {
+      "Ticket": {
+        "type": "object",
+        "title": "Ticket",
+        "required": ["id", "title", "status", "priority", "requester"],
+        "properties": {
+          "id": { "type": "string", "readOnly": true },
+          "title": { "type": "string" },
+          "status": { "type": "string", "enum": ["open", "pending", "closed"] },
+          "priority": { "type": "string", "enum": ["low", "normal", "high"] },
+          "requester": { "type": "string", "format": "email" },
+          "assignee": { "type": "string" },
+          "description": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time", "readOnly": true }
+        }
+      },
+      "TicketInput": {
+        "type": "object",
+        "title": "Ticket",
+        "required": ["title", "requester"],
+        "properties": {
+          "title": { "type": "string", "minLength": 3 },
+          "status": { "type": "string", "enum": ["open", "pending", "closed"], "default": "open" },
+          "priority": { "type": "string", "enum": ["low", "normal", "high"], "default": "normal" },
+          "requester": { "type": "string", "format": "email" },
+          "assignee": { "type": "string" },
+          "description": { "type": "string" }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": { "id": { "type": "string" }, "name": { "type": "string" }, "email": { "type": "string" }, "roles": { "type": "string" } }
+      },
+      "Profile": {
+        "type": "object",
+        "properties": { "sub": { "type": "string" }, "name": { "type": "string" }, "email": { "type": "string" }, "roles": { "type": "string" }, "scopes": { "type": "string" } }
+      }
+    }
+  }
+}

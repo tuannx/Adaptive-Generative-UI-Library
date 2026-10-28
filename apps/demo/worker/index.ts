@@ -5,6 +5,7 @@
 import { handleProxy, PROXY_PREFIX, type Env as ProxyEnv } from './proxy.js';
 import { handleDecide, type DecideEnv } from './decide.js';
 import { handleTarotMock, TAROT_PREFIX } from './tarot-mock.js';
+import { handleHelpdeskMock, HELPDESK_PREFIX } from './helpdesk-mock.js';
 
 type Env = ProxyEnv & DecideEnv;
 
@@ -19,6 +20,9 @@ export default {
     }
     if (pathname === TAROT_PREFIX || pathname.startsWith(`${TAROT_PREFIX}/`)) {
       return handleTarotMock(request);
+    }
+    if (pathname === HELPDESK_PREFIX || pathname.startsWith(`${HELPDESK_PREFIX}/`)) {
+      return handleHelpdeskMock(request);
     }
     return env.ASSETS.fetch(request);
   },

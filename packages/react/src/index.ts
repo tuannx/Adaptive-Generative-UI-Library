@@ -8,7 +8,13 @@ export {
   agulHttp,
   agulFetcher,
   resolveAuthHeaders,
+  createAgulFetch,
 } from './http/client.js';
+export { useAgulAuth, AuthMenu, SignInModal, SignInPanel } from './auth/AuthUi.js';
+export type { AgulAuthOptions, AgulOAuthOptions, AgulAuthState, SignInReason } from './auth/controller.js';
+export { AgulSessionStore, signRequest, isApiUrl, describeUser, grantsFromCredentials } from './auth/session.js';
+export type { AgulCredential, AgulCredentials, AgulAuthStorage, AgulUser } from './auth/session.js';
+export { startAuthorization, completeAuthorization, requestToken, refreshCredential, discoverOidc, pkceChallenge } from './auth/oauth.js';
 export type { GetAuthHeaders, AgulAuthConfig } from './http/client.js';
 
 export { PluginProvider, useAgulPlugins } from './plugins/PluginContext.js';
@@ -75,6 +81,11 @@ export {
   getDefaultListQueryState,
   buildListApiUrl,
   buildListQueryString,
+  canAccessEndpoint,
+  grantsFromClaims,
+  decodeJwt,
+  isPublicOperation,
+  requiredRoles,
 } from '@agul/core';
 
 export type {
@@ -101,4 +112,9 @@ export type {
   ChatBinding,
   StreamFormat,
   LlmCompletionRequest,
+  SecurityScheme,
+  OAuthFlow,
+  OAuthFlows,
+  AccessGrants,
+  PlanOptions,
 } from '@agul/core';

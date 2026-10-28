@@ -29,6 +29,13 @@ function rememberSpecUrl(url: string | undefined): void {
   window.dispatchEvent(new PopStateEvent('popstate'));
 }
 
+function redirectUri(): string {
+  const params = new URLSearchParams(window.location.search);
+  for (const name of ['code', 'state', 'session_state', 'iss', 'error', 'error_description']) params.delete(name);
+  const query = params.toString();
+  return `${window.location.origin}/${query ? `?${query}` : ''}`;
+}
+
 function App() {
   const [spec, setSpec] = useState<Record<string, unknown> | undefined>(undefined);
   const [specUrl, setSpecUrlState] = useState<string | undefined>(
@@ -111,6 +118,12 @@ function App() {
         }}>
           Tarot Chat
         </Button>
+        <Button data-testid="demo-load-helpdesk" onClick={() => {
+          setSpec(undefined);
+          setSpecUrl('/examples/helpdesk-secured.json');
+        }}>
+          Helpdesk (secured)
+        </Button>
         <Input.Password
           placeholder="Bearer token (mock)"
           value={token}
@@ -153,6 +166,11 @@ function App() {
         proxyUrl={useProxy ? PROXY_PREFIX : undefined}
         decisionProvider={decisionProvider}
         plugins={demoFieldPlugins}
+        auth={{
+          // The demo's identity provider (worker/helpdesk-mock.ts) accepts any client id; a real one registers
+          // this UI as a public client. The redirect keeps ?spec= so the callback reopens the same API.
+          oauth: { clientId: 'agul-demo', redirectUri: typeof window === 'undefined' ? undefined : redirectUri() },
+        }}
       />
     </div>
   );

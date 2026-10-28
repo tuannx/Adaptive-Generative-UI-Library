@@ -8,7 +8,8 @@ import {
   useLocation,
   useParams,
 } from 'react-router-dom';
-import { Alert, ConfigProvider, Result, Spin, Tag, Tooltip, message } from 'antd';
+import { Alert, Button, ConfigProvider, Result, Space, Spin, Tag, Tooltip, message } from 'antd';
+import { useSWRConfig } from 'swr';
 import {
   generateRoutes,
   heuristicDecisions,
@@ -19,6 +20,7 @@ import {
   parseOpenAPISync,
   parseJsonSchema,
   wrapJsonSchemaAsOpenAPI,
+  type AccessGrants,
   type JsonSchemaInputOptions,
   type OperationPage,
   type ParsedAPI,
@@ -35,7 +37,9 @@ import { AppLayout } from './components/AppLayout.js';
 import { ListView } from './components/ListView.js';
 import { DetailView } from './components/DetailView.js';
 import { FormView } from './components/FormView.js';
-import { createAgulHttp, resolveAuthHeaders, withProxy, type GetAuthHeaders } from './http/client.js';
+import { createAgulFetch, createAgulHttp, withProxy, type AgulAuthConfig, type GetAuthHeaders } from './http/client.js';
+import { useAuthController, type AgulAuthOptions } from './auth/controller.js';
+import { AgulAuthProvider, AuthMenu, SignInModal, SignInPanel } from './auth/AuthUi.js';
 import { PluginProvider } from './plugins/PluginContext.js';
 import type { AgulFieldPlugin } from './plugins/types.js';
 import { AgulRuntimeProvider, type AgulRuntime } from './runtime.js';
@@ -55,6 +59,16 @@ export interface AGULRendererProps {
   token?: string;
   /** Custom auth headers (takes precedence over token) */
   getAuthHeaders?: GetAuthHeaders;
+  /**
+   * Built-in sign-in from the spec's `securitySchemes` (API key, Basic, Bearer, OAuth 2 / OpenID Connect).
+   * Used when neither `token` nor `getAuthHeaders` is given. Credentials are only sent to the API's origin.
+   */
+  auth?: AgulAuthOptions;
+  /**
+   * Roles / permissions / scopes of the current user. Operations needing others (`x-agul-roles`, OAuth scopes
+   * in `security`) are left out of menus, pages and buttons. Defaults to what the signed-in token's claims say.
+   */
+  authorities?: string[];
   /** Custom field renderer plugins */
   plugins?: AgulFieldPlugin[];
   /** Ant Design primary color */
@@ -85,10 +99,11 @@ export interface AGULRendererProps {
 
 interface AgulModel {
   api: ParsedAPI;
-  plan: UiPlan;
 }
 
 type ModelState = { status: 'loading' } | { status: 'error'; error: Error } | ({ status: 'ready' } & AgulModel);
+
+const ALL_KEYS = () => true;
 
 export function AGULRenderer({ basename, primaryColor = '#1890ff', ...props }: AGULRendererProps) {
   const inRouter = useInRouterContext();
@@ -109,6 +124,8 @@ function AGULApp({
   baseUrl,
   token,
   getAuthHeaders,
+  auth: authOptions,
+  authorities,
   proxyUrl,
   plugins = [],
   decisionProvider,
@@ -121,17 +138,11 @@ function AGULApp({
   const routeBase = useMountPath(embedded);
   const { search } = useLocation();
 
-  const auth = useLatest({ token, getAuthHeaders });
+  const auth = React.useRef<AgulAuthConfig>({ token, getAuthHeaders });
   const proxy = useLatest(proxyUrl);
   const http = React.useMemo(() => createAgulHttp(() => auth.current, () => proxy.current), [auth, proxy]);
-  const agulFetch = React.useCallback(
-    async (url: string, init: RequestInit = {}) => {
-      const headers = new Headers(init.headers);
-      for (const [key, value] of Object.entries(await resolveAuthHeaders(auth.current))) headers.set(key, value);
-      return fetch(withProxy(url, proxy.current), { ...init, headers });
-    },
-    [auth, proxy],
-  );
+  const agulFetch = React.useMemo(() => createAgulFetch(() => auth.current, () => proxy.current), [auth, proxy]);
+  const { mutate } = useSWRConfig();
   const onReadyRef = useLatest(onReady);
   const onErrorRef = useLatest(onError);
 
@@ -157,7 +168,7 @@ function AGULApp({
       }
 
       if (baseUrl) api.baseUrl = baseUrl;
-      return { status: 'ready', api, plan: planUi(api, heuristicDecisions(api)) };
+      return { status: 'ready', api };
     } catch (err) {
       return { status: 'error', error: err instanceof Error ? err : new Error(String(err)) };
     }
@@ -177,10 +188,18 @@ function AGULApp({
     decisionProvider,
     cacheDecisions,
   );
-  const plan = React.useMemo(
-    () =>
-      state.status !== 'ready' ? undefined : decided.decisions ? planUi(state.api, decided.decisions) : state.plan,
-    [state, decided.decisions],
+  const authState = useAuthController(state.status === 'ready' ? state.api : undefined, authOptions, {
+    token,
+    hostManaged: !!(token || getAuthHeaders),
+    onChange: () => void mutate(ALL_KEYS),
+  });
+  auth.current = { token, getAuthHeaders, sign: authState.sign, onUnauthorized: authState.onUnauthorized };
+
+  const grants = useGrants(authorities, authState.grants);
+  const heuristics = React.useMemo(() => (state.status === 'ready' ? heuristicDecisions(state.api) : undefined), [state]);
+  const plan = React.useMemo<UiPlan | undefined>(
+    () => (state.status !== 'ready' ? undefined : planUi(state.api, decided.decisions ?? heuristics, { grants })),
+    [state, decided.decisions, heuristics, grants],
   );
   const onDecisionsRef = useLatest(onDecisions);
   React.useEffect(() => {
@@ -208,6 +227,17 @@ function AGULApp({
     return <Alert message="Error" description={state.error.message} type="error" showIcon style={{ margin: 24 }} />;
   }
 
+  if (authState.required) {
+    return (
+      <AgulAuthProvider value={authState}>
+        <div style={{ maxWidth: 480, margin: '64px auto', padding: 24 }} data-testid="agul-signin-gate">
+          <Result status="403" title={state.api.title} subTitle="Sign in to continue." style={{ paddingBottom: 0 }} />
+          <SignInPanel />
+        </div>
+      </AgulAuthProvider>
+    );
+  }
+
   if (!plan || (plan.resources.length === 0 && plan.pages.length === 0)) {
     return (
       <Alert
@@ -222,14 +252,22 @@ function AGULApp({
 
   const defaultPath = plan.menu.flatMap((group) => group.children ?? []).find((item) => !item.params)?.key;
 
+  const signedOut = Object.keys(authState.schemes).length > 0 && !authState.user;
+
   return (
+    <AgulAuthProvider value={authState}>
     <AgulRuntimeProvider value={runtime!}>
       <PluginProvider plugins={plugins}>
         <AppLayout
           menu={plan.menu}
           apiTitle={state.api.title}
           apiVersion={state.api.version}
-          headerExtra={decisionProvider ? <DecisionStatus status={decided.status} error={decided.error} /> : undefined}
+          headerExtra={
+            <Space>
+              {decisionProvider && <DecisionStatus status={decided.status} error={decided.error} />}
+              <AuthMenu />
+            </Space>
+          }
         >
           <Routes>
             <Route
@@ -252,12 +290,35 @@ function AGULApp({
             {plan.pages.map((page) => pageRoute(page))}
             <Route
               path="*"
-              element={<Alert message="404 Not Found" description="The page you are looking for does not exist" type="warning" showIcon />}
+              element={
+                <div data-testid="agul-not-found">
+                <Result
+                  status={signedOut || grants ? '403' : '404'}
+                  title={signedOut ? 'Sign in to see this page' : grants ? 'Not available' : 'Page not found'}
+                  subTitle={
+                    signedOut
+                      ? 'This page may need you to be signed in.'
+                      : grants
+                        ? "This page doesn't exist, or your account isn't allowed to use it."
+                        : 'The page you are looking for does not exist.'
+                  }
+                  extra={
+                    signedOut ? (
+                      <Button type="primary" onClick={() => authState.openSignIn('required')}>
+                        Sign in
+                      </Button>
+                    ) : undefined
+                  }
+                />
+                </div>
+              }
             />
           </Routes>
         </AppLayout>
+        <SignInModal />
       </PluginProvider>
     </AgulRuntimeProvider>
+    </AgulAuthProvider>
   );
 }
 
@@ -296,6 +357,15 @@ function DecisionStatus({ status, error }: { status: DecisionStatusValue; error?
         {text}
       </Tag>
     </Tooltip>
+  );
+}
+
+/** Grants from the `authorities` prop when given, else from the signed-in token. */
+function useGrants(authorities: string[] | undefined, fromToken: AccessGrants | undefined): AccessGrants | undefined {
+  const key = authorities?.join('\n');
+  return React.useMemo(
+    () => (key !== undefined ? { authorities: new Set(key ? key.split('\n') : []) } : fromToken),
+    [key, fromToken],
   );
 }
 
