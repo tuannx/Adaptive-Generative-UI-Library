@@ -55,6 +55,26 @@
     "react-router-dom": "^6.0.0 || ^7.0.0",
     "swr": "^2.0.0"
   },
+  "peerDependenciesMeta": {
+    "@ant-design/icons": {
+      "optional": true
+    },
+    "antd": {
+      "optional": true
+    },
+    "axios": {
+      "optional": true
+    },
+    "dayjs": {
+      "optional": true
+    },
+    "react-router-dom": {
+      "optional": true
+    },
+    "swr": {
+      "optional": true
+    }
+  },
   "dependencies": {
     "@agul/core": "0.1.0",
     "js-yaml": "^4.3.2"
