@@ -9,6 +9,7 @@ const root = resolve(import.meta.dirname, '..');
 
 const scenarios = [
   { id: 'core', label: '@agul/core (parse + plan, no React)', code: "export { parseOpenAPI, planUi } from '@agul/core';" },
+  { id: 'headless', label: '@agul/react/headless useAgulFlow (no antd)', code: "export { useAgulFlow } from '@agul/react/headless';" },
   { id: 'renderer', label: '@agul/react AGULRenderer (antd included)', code: "export { AGULRenderer } from '@agul/react';" },
   { id: 'antd-form', label: 'antd Form + Input baseline', code: "export { Form, Input, Button } from 'antd';" },
 ];
