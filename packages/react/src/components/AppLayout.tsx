@@ -103,7 +103,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, menu, apiTitle =
     icon: <ApiOutlined />,
     children: group.children?.map((item) => ({
       key: item.key,
-      label: item.params?.length ? <span title={item.key}>{item.label} …</span> : item.label,
+      label: item.params?.length ? <span title={`${item.label} — ${item.key}`}>{item.label} …</span> : <span title={item.label}>{item.label}</span>,
     })),
   }));
 
@@ -172,7 +172,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, menu, apiTitle =
           <Title level={4} style={{ margin: 0 }}>
             {apiTitle}
           </Title>
-          {apiVersion && <Text type="secondary">v{apiVersion}</Text>}
+          {apiVersion && <Text type="secondary">{/^\d/.test(apiVersion) ? `v${apiVersion}` : apiVersion}</Text>}
           {headerExtra && <div style={{ marginLeft: 'auto', alignSelf: 'center' }}>{headerExtra}</div>}
         </Header>
 
