@@ -5,7 +5,7 @@
     "version": "0.3.0",
     "description": "Sample backend for an AI tarot reader: card catalogue, readings, reader personas and a streaming chat."
   },
-  "servers": [{ "url": "/mock/tarot" }],
+  "servers": [{ "url": "../mock/tarot" }],
   "tags": [
     { "name": "chat", "description": "Talk to the reader" },
     { "name": "readings", "description": "Card draws and their interpretation" },

@@ -12,7 +12,10 @@ import './App.css';
 
 const PROXY_PREFIX = import.meta.env.VITE_AGUL_PROXY;
 const DECIDE_URL = readQueryParam('decide') ?? import.meta.env.VITE_AGUL_DECIDE;
-const DEFAULT_SPEC = '/examples/petstore.json';
+/** Where the demo is served from: `/` on the Worker, `/<repo>/demo/` on GitHub Pages. */
+const BASE = import.meta.env.BASE_URL;
+const example = (name: string) => `${BASE}examples/${name}`;
+const DEFAULT_SPEC = example('petstore.json');
 
 function readQueryParam(name: string): string | undefined {
   if (typeof window === 'undefined') return undefined;
@@ -25,7 +28,7 @@ function rememberSpecUrl(url: string | undefined): void {
   else params.delete('spec');
   const query = params.toString();
   // A page of the previous spec rarely exists in the next one: restart at the root and let the router know.
-  window.history.replaceState(null, '', `/${query ? `?${query}` : ''}`);
+  window.history.replaceState(null, '', `${BASE}${query ? `?${query}` : ''}`);
   window.dispatchEvent(new PopStateEvent('popstate'));
 }
 
@@ -33,7 +36,7 @@ function redirectUri(): string {
   const params = new URLSearchParams(window.location.search);
   for (const name of ['code', 'state', 'session_state', 'iss', 'error', 'error_description']) params.delete(name);
   const query = params.toString();
-  return `${window.location.origin}/${query ? `?${query}` : ''}`;
+  return `${window.location.origin}${BASE}${query ? `?${query}` : ''}`;
 }
 
 function App() {
@@ -91,7 +94,7 @@ function App() {
         <Button
           onClick={() => {
             setSpec(undefined);
-            setSpecUrl('/examples/petstore.json');
+            setSpecUrl(example('petstore.json'));
           }}
         >
           Reset to Petstore
@@ -100,7 +103,7 @@ function App() {
           data-testid="demo-load-plugins-spec"
           onClick={() => {
             setSpec(undefined);
-            setSpecUrl('/examples/petstore-plugins.json');
+            setSpecUrl(example('petstore-plugins.json'));
           }}
         >
           Plugins + Wizard
@@ -108,20 +111,20 @@ function App() {
         <Button
           onClick={() => {
             setSpec(undefined);
-            setSpecUrl('/examples/jsonplaceholder.json');
+            setSpecUrl(example('jsonplaceholder.json'));
           }}
         >
           JSONPlaceholder
         </Button>
         <Button data-testid="demo-load-tarot" onClick={() => {
           setSpec(undefined);
-          setSpecUrl('/examples/tarot-chat.json');
+          setSpecUrl(example('tarot-chat.json'));
         }}>
           Tarot Chat
         </Button>
         <Button data-testid="demo-load-helpdesk" onClick={() => {
           setSpec(undefined);
-          setSpecUrl('/examples/helpdesk-secured.json');
+          setSpecUrl(example('helpdesk-secured.json'));
         }}>
           Helpdesk (secured)
         </Button>
@@ -161,6 +164,7 @@ function App() {
       </div>
 
       <AGULRenderer
+        basename={BASE.replace(/\/+$/, '') || undefined}
         spec={spec}
         specUrl={specUrl}
         token={token || undefined}

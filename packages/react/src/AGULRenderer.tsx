@@ -169,6 +169,7 @@ function AGULApp({
         if (fetched.status !== 'ready') return fetched;
         api = parseOpenAPISync(fetched.spec);
         api.baseUrl = resolveAgainst(api.baseUrl, fetched.url);
+        resolveSchemeUrls(api, fetched.url);
       }
 
       if (baseUrl) api.baseUrl = baseUrl;
@@ -439,6 +440,21 @@ function relative(path: string): string {
 function resolveAgainst(url: string, specUrl: string): string {
   if (/^[a-z][a-z\d+.-]*:\/\//i.test(url) || typeof window === 'undefined') return url;
   return new URL(url || '.', new URL(specUrl, window.location.href)).toString().replace(/\/+$/, '');
+}
+
+/** Relative sign-in URLs in `securitySchemes` are relative to the spec document, like `servers`. */
+function resolveSchemeUrls(api: ParsedAPI, specUrl: string): void {
+  for (const scheme of Object.values(api.securitySchemes ?? {})) {
+    if (scheme.type === 'openIdConnect') scheme.openIdConnectUrl = resolveAgainst(scheme.openIdConnectUrl, specUrl);
+    if (scheme.type === 'oauth2') {
+      for (const flow of Object.values(scheme.flows)) {
+        if (!flow) continue;
+        if (flow.authorizationUrl) flow.authorizationUrl = resolveAgainst(flow.authorizationUrl, specUrl);
+        if (flow.tokenUrl) flow.tokenUrl = resolveAgainst(flow.tokenUrl, specUrl);
+        if (flow.refreshUrl) flow.refreshUrl = resolveAgainst(flow.refreshUrl, specUrl);
+      }
+    }
+  }
 }
 
 function useLatest<T>(value: T): React.RefObject<T> {

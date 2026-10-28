@@ -15,7 +15,9 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup && tsc -p tsconfig.build.json",
     "dev": "tsup --watch",
@@ -41,8 +43,21 @@
     "url": "https://github.com/tuannx/Adaptive-Generative-UI-Library.git",
     "directory": "packages/mcp"
   },
-  "keywords": ["mcp", "openapi", "agent", "generative-ui", "agul"],
+  "keywords": [
+    "mcp",
+    "openapi",
+    "agent",
+    "generative-ui",
+    "agul"
+  ],
   "publishConfig": {
     "access": "public"
+  },
+  "homepage": "https://tuannx.github.io/Adaptive-Generative-UI-Library/",
+  "bugs": {
+    "url": "https://github.com/tuannx/Adaptive-Generative-UI-Library/issues"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }

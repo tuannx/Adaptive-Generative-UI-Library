@@ -64,5 +64,12 @@
     "tsup": "^8.5.0",
     "typescript": "^7.0.2",
     "vitest": "^3.2.4"
+  },
+  "homepage": "https://tuannx.github.io/Adaptive-Generative-UI-Library/",
+  "bugs": {
+    "url": "https://github.com/tuannx/Adaptive-Generative-UI-Library/issues"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }

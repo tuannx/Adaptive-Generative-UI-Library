@@ -23,7 +23,8 @@
     "swarm:status": "node scripts/swarm-status.mjs",
     "swarm:next": "node scripts/swarm-next.mjs",
     "swarm:bootstrap": "node scripts/swarm-bootstrap.mjs",
-    "clean": "rm -rf packages/*/dist apps/demo/dist apps/validate-consumer/dist node_modules/.cache"
+    "clean": "rm -rf packages/*/dist apps/demo/dist apps/validate-consumer/dist node_modules/.cache",
+    "pages:build": "node scripts/build-pages.mjs"
   },
   "devDependencies": {
     "@agul/mcp": "0.1.0",

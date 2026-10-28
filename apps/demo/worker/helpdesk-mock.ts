@@ -99,7 +99,7 @@ function escapeHtml(text: string): string {
   return text.replace(/[&<>"']/g, (char) => `&#${char.charCodeAt(0)};`);
 }
 
-function authorizePage(url: URL): Response {
+function authorizePage(url: URL, issuer: string): Response {
   const redirectUri = url.searchParams.get('redirect_uri') ?? '';
   if (!redirectUri.startsWith(`${url.origin}/`)) return json(400, { error: 'invalid_request', error_description: 'redirect_uri must be on this site' });
   const state = url.searchParams.get('state') ?? '';
@@ -110,7 +110,7 @@ function authorizePage(url: URL): Response {
     const code = base64Url(JSON.stringify({ u: user.sub, c: challenge, r: redirectUri, e: Date.now() + 120_000 }));
     const target = new URL(redirectUri);
     if (responseType === 'token') {
-      target.hash = new URLSearchParams({ access_token: accessToken(user, url.origin + HELPDESK_PREFIX), token_type: 'Bearer', expires_in: String(ACCESS_TTL_SECONDS), scope: user.scope, state }).toString();
+      target.hash = new URLSearchParams({ access_token: accessToken(user, issuer), token_type: 'Bearer', expires_in: String(ACCESS_TTL_SECONDS), scope: user.scope, state }).toString();
     } else {
       target.searchParams.set('code', code);
       target.searchParams.set('state', state);
@@ -280,8 +280,10 @@ async function api(request: Request, path: string, url: URL): Promise<Response> 
 
 export async function handleHelpdeskMock(request: Request): Promise<Response> {
   const url = new URL(request.url);
-  const path = url.pathname.slice(HELPDESK_PREFIX.length) || '/';
-  const issuer = `${url.origin}${HELPDESK_PREFIX}`;
+  // the mock may live under a base path (GitHub Pages serves the demo from /<repo>/demo/)
+  const at = url.pathname.indexOf(HELPDESK_PREFIX);
+  const path = url.pathname.slice(at + HELPDESK_PREFIX.length) || '/';
+  const issuer = `${url.origin}${url.pathname.slice(0, at + HELPDESK_PREFIX.length)}`;
 
   if (path === '/.well-known/openid-configuration') {
     return json(200, {
@@ -295,7 +297,7 @@ export async function handleHelpdeskMock(request: Request): Promise<Response> {
       scopes_supported: ['openid', 'profile', 'tickets:read', 'tickets:write', 'users:read'],
     });
   }
-  if (path === '/authorize') return authorizePage(url);
+  if (path === '/authorize') return authorizePage(url, issuer);
   if (path === '/token' && request.method === 'POST') return tokenEndpoint(request, issuer);
   if (path === '/logout') {
     const target = url.searchParams.get('post_logout_redirect_uri') ?? '/';

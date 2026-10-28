@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AGUL — OpenAPI to React admin UI</title>
+  <meta name="description" content="AGUL turns an OpenAPI spec into a working React admin: CRUD, action forms, streaming chat, sign-in and role-based access — decided by rules, your spec, or an LLM." />
+  <meta property="og:title" content="AGUL — Adaptive Generative UI Library" />
+  <meta property="og:description" content="OpenAPI in, admin UI out: CRUD, actions, streaming chat, OAuth/OIDC sign-in and role-based access." />
+  <meta property="og:image" content="assets/crud-list.webp" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231668dc'/%3E%3Ctext x='16' y='22' font-family='system-ui' font-size='17' font-weight='700' fill='white' text-anchor='middle'%3EA%3C/text%3E%3C/svg%3E" />
+  <style>
+    :root {
+      --bg: #f7f8fb;
+      --surface: #ffffff;
+      --text: #141a2a;
+      --muted: #5b6478;
+      --line: #e3e7ef;
+      --accent: #1668dc;
+      --accent-soft: #e8f0fe;
+      --on-accent: #ffffff;
+      --code-bg: #0f172a;
+      --code-text: #e2e8f0;
+      --shadow: 0 10px 30px rgba(20, 26, 42, 0.08);
+      --radius: 14px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0b0f19;
+        --surface: #121827;
+        --text: #e7eaf2;
+        --muted: #9aa3b7;
+        --line: #232b3d;
+        --accent: #6ea8ff;
+        --accent-soft: #15233d;
+        --on-accent: #0b0f19;
+        --code-bg: #060a14;
+        --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg: #0b0f19;
+      --surface: #121827;
+      --text: #e7eaf2;
+      --muted: #9aa3b7;
+      --line: #232b3d;
+      --accent: #6ea8ff;
+      --accent-soft: #15233d;
+      --on-accent: #0b0f19;
+      --code-bg: #060a14;
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 0 16px; }
+    header.nav {
+      position: sticky; top: 0; z-index: 10;
+      background: color-mix(in srgb, var(--bg) 86%, transparent);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+    }
+    header.nav .wrap { display: flex; align-items: center; gap: 20px; height: 60px; }
+    .logo { display: flex; align-items: center; gap: 10px; font-weight: 750; letter-spacing: 0.2px; color: var(--text); }
+    .logo span.mark { width: 28px; height: 28px; border-radius: 7px; background: var(--accent); color: var(--on-accent); display: grid; place-items: center; font-size: 15px; }
+    nav.links { margin-left: auto; display: flex; gap: 18px; font-size: 15px; }
+    nav.links a { color: var(--muted); }
+    @media (max-width: 640px) { nav.links a.optional { display: none; } }
+
+    .hero { padding: 72px 0 40px; text-align: center; }
+    .pill { display: inline-block; padding: 4px 12px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 13px; font-weight: 600; }
+    h1 { font-size: clamp(32px, 5.4vw, 56px); line-height: 1.08; margin: 18px auto 16px; max-width: 880px; letter-spacing: -0.02em; }
+    .lead { color: var(--muted); font-size: clamp(17px, 2.2vw, 20px); max-width: 720px; margin: 0 auto 28px; }
+    .ctas { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; border-radius: 10px; font-weight: 650; border: 1px solid var(--line); background: var(--surface); color: var(--text); }
+    .btn:hover { text-decoration: none; border-color: var(--accent); }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+    .install { margin: 26px auto 0; display: inline-flex; align-items: center; gap: 10px; background: var(--code-bg); color: var(--code-text); padding: 10px 16px; border-radius: 10px; font: 14px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; max-width: 100%; overflow-x: auto; }
+    .install .prompt { color: #64748b; }
+    .note { color: var(--muted); font-size: 13px; margin-top: 8px; }
+
+    .shot { border-radius: var(--radius); border: 1px solid var(--line); box-shadow: var(--shadow); overflow: hidden; background: var(--surface); }
+    .shot img { display: block; width: 100%; height: auto; }
+    .hero-shot { margin: 44px auto 0; max-width: 1000px; }
+
+    section { padding: 64px 0; }
+    section h2 { font-size: clamp(26px, 3.4vw, 36px); margin: 0 0 10px; letter-spacing: -0.01em; }
+    section p.sub { color: var(--muted); margin: 0 0 32px; max-width: 720px; }
+
+    .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); }
+    .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; }
+    .card h3 { margin: 0 0 6px; font-size: 18px; }
+    .card p { margin: 0; color: var(--muted); font-size: 15px; }
+    .card .icon { font-size: 22px; margin-bottom: 8px; }
+
+    pre { margin: 0; background: var(--code-bg); color: var(--code-text); border-radius: var(--radius); padding: 18px 20px; overflow-x: auto; font: 14px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    pre .c { color: #64748b; }
+    pre .k { color: #c084fc; }
+    pre .s { color: #86efac; }
+    pre .t { color: #7dd3fc; }
+    .split { display: grid; gap: 24px; grid-template-columns: 1fr 1fr; align-items: start; }
+    .split > div { min-width: 0; }
+    @media (max-width: 860px) { .split { grid-template-columns: 1fr; } }
+
+    .gallery { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); }
+    figure { margin: 0; }
+    figcaption { color: var(--muted); font-size: 14px; margin-top: 10px; }
+    figcaption b { color: var(--text); }
+
+    .flow { display: flex; gap: 12px; flex-wrap: wrap; align-items: stretch; }
+    .flow .step { flex: 1 1 200px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; }
+    .flow .step b { display: block; margin-bottom: 4px; }
+    .flow .step span { color: var(--muted); font-size: 14px; }
+    .flow .arrow { align-self: center; color: var(--muted); font-size: 20px; }
+    @media (max-width: 860px) { .flow .arrow { display: none; } }
+
+    table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; font-size: 15px; }
+    th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { color: var(--muted); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; }
+    tr:last-child td { border-bottom: 0; }
+    .table-wrap { overflow-x: auto; }
+
+    .demo-list { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); }
+    .demo-list a.card { display: block; color: var(--text); }
+    .demo-list a.card:hover { border-color: var(--accent); text-decoration: none; }
+    .demo-list a.card span { color: var(--muted); font-size: 14px; }
+
+    footer { border-top: 1px solid var(--line); padding: 28px 0 40px; color: var(--muted); font-size: 14px; }
+    footer .wrap { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap">
+      <a class="logo" href="./"><span class="mark">A</span> AGUL</a>
+      <nav class="links">
+        <a class="optional" href="#features">Features</a>
+        <a class="optional" href="#quickstart">Quick start</a>
+        <a href="demo/">Demo</a>
+        <a href="https://github.com/tuannx/Adaptive-Generative-UI-Library">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="wrap hero">
+      <span class="pill">Adaptive Generative UI Library · v0.x preview</span>
+      <h1>Your OpenAPI spec is already an admin UI.</h1>
+      <p class="lead">
+        AGUL reads an OpenAPI or Swagger spec and renders a working React app: lists, details and forms for every
+        resource, forms for actions, streaming chat for AI endpoints — with sign-in and role-based access from the
+        spec's own security rules.
+      </p>
+      <div class="ctas">
+        <a class="btn primary" href="demo/">Open the live demo →</a>
+        <a class="btn" href="https://github.com/tuannx/Adaptive-Generative-UI-Library">View on GitHub</a>
+      </div>
+      <div><code class="install"><span class="prompt">$</span> npm install @agul/react</code></div>
+      <div class="note">Packages are being published to npm; until then, build from the repository.</div>
+      <div class="shot hero-shot"><img src="assets/roles.webp" width="1280" height="760" alt="AGUL rendering a secured Helpdesk API: tickets table with view, edit and delete actions for an admin" /></div>
+    </div>
+
+    <section id="features">
+      <div class="wrap">
+        <h2>Every operation gets a page</h2>
+        <p class="sub">No code generation step and no hand-written screens. Change the spec, the UI follows.</p>
+        <div class="grid">
+          <div class="card"><div class="icon">📋</div><h3>CRUD from resources</h3><p>Endpoints are grouped into resources: list with search, filters and pagination, detail, create and edit forms, single and bulk delete.</p></div>
+          <div class="card"><div class="icon">⚡</div><h3>Actions</h3><p>Anything that isn't record management becomes a form with its result shown as a table, a record, text — or a live stream.</p></div>
+          <div class="card"><div class="icon">💬</div><h3>Streaming chat</h3><p>Message-in, reply-out endpoints get a conversation UI with history, session ids and SSE / NDJSON streaming (OpenAI and Anthropic chunk shapes).</p></div>
+          <div class="card"><div class="icon">🔐</div><h3>Sign-in from the spec</h3><p>API key, Basic, Bearer, OAuth 2 (code + PKCE, password, client credentials) and OpenID Connect, with token refresh and a prompt on 401.</p></div>
+          <div class="card"><div class="icon">🛡️</div><h3>Roles and scopes</h3><p>Pages, menu entries and buttons the user may not use disappear, from OAuth scopes in <code>security</code> and <code>x-agul-roles</code>.</p></div>
+          <div class="card"><div class="icon">🧠</div><h3>LLM-decided layout</h3><p>Optionally let an LLM or your own decision API choose CRUD, action, chat or hidden per operation. Invalid answers are dropped; rules stay the fallback.</p></div>
+          <div class="card"><div class="icon">🤖</div><h3>Agent-ready</h3><p>An MCP server (<code>@agul/mcp</code>) lets coding agents turn a spec into routes, menu and an embed snippet in one tool call.</p></div>
+          <div class="card"><div class="icon">🧪</div><h3>Tested on real APIs</h3><p>Measured on 19 public specs — Stripe, GitHub, Kubernetes, Jira, Twilio, NetBox… — 9,000+ operations, 519 resources with full CRUD.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="quickstart">
+      <div class="wrap split">
+        <div>
+          <h2>One component</h2>
+          <p class="sub">Point it at a spec. Mount it at the root, or inside your own router under a splat route.</p>
+<pre><span class="k">import</span> { AGULRenderer } <span class="k">from</span> <span class="s">'@agul/react'</span>;
+
+<span class="k">export default function</span> <span class="t">Admin</span>() {
+  <span class="k">return</span> (
+    &lt;<span class="t">AGULRenderer</span>
+      specUrl=<span class="s">"/openapi.json"</span>
+      auth={{ oauth: { clientId: <span class="s">'admin-ui'</span> } }}
+    /&gt;
+  );
+}
+
+<span class="c">// inside an existing app:</span>
+&lt;<span class="t">Route</span> path=<span class="s">"/admin/*"</span> element={&lt;<span class="t">AGULRenderer</span> spec={spec} /&gt;} /&gt;</pre>
+        </div>
+        <div>
+          <h2>Tune it in the spec</h2>
+          <p class="sub">Spec extensions win over everything else.</p>
+<pre><span class="s">"/admin/reindex"</span>: {
+  <span class="s">"post"</span>: {
+    <span class="s">"x-agul-roles"</span>: [<span class="s">"admin"</span>],
+    <span class="s">"x-agul-view"</span>: <span class="s">"action"</span>
+  }
+},
+<span class="s">"/chat"</span>: {
+  <span class="s">"post"</span>: {
+    <span class="s">"x-agul-view"</span>: <span class="s">"chat"</span>,
+    <span class="s">"x-agul-chat"</span>: { <span class="s">"messageField"</span>: <span class="s">"message"</span> }
+  }
+}</pre>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <h2>How each page is decided</h2>
+        <p class="sub">Three layers, highest priority first. The rule-based layout renders immediately; a provider can refine it.</p>
+        <div class="flow">
+          <div class="step"><b>1 · Your spec</b><span><code>x-agul-view</code>, <code>x-agul-chat</code>, <code>x-agul-roles</code> — never overridden.</span></div>
+          <div class="arrow">→</div>
+          <div class="step"><b>2 · Decision provider</b><span>An LLM (e.g. Claude behind a Worker) or your own API returns kinds, labels, groups. Validated, cached.</span></div>
+          <div class="arrow">→</div>
+          <div class="step"><b>3 · Built-in rules</b><span>Resource model for CRUD, chat detection, everything else an action. Always available.</span></div>
+          <div class="arrow">→</div>
+          <div class="step"><b>Access filter</b><span>Operations the signed-in user can't call are removed from pages, menu and buttons.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <h2>What it looks like</h2>
+        <p class="sub">All screenshots are from the demo below — the same build that runs on this site.</p>
+        <div class="gallery">
+          <figure><div class="shot"><img loading="lazy" src="assets/chat.webp" width="1280" height="760" alt="Streaming chat UI generated for a tarot chat endpoint" /></div><figcaption><b>Chat.</b> SSE stream from the API, rendered as it arrives.</figcaption></figure>
+          <figure><div class="shot"><img loading="lazy" src="assets/action.webp" width="1280" height="760" alt="Action form 'Draw a reading' with a nested result table" /></div><figcaption><b>Action.</b> A POST that isn't "create" becomes a form with its result.</figcaption></figure>
+          <figure><div class="shot"><img loading="lazy" src="assets/signin.webp" width="1280" height="760" alt="Sign-in dialog with OpenID Connect and API key tabs" /></div><figcaption><b>Sign-in.</b> Tabs come from <code>securitySchemes</code>; opens itself on a 401.</figcaption></figure>
+          <figure><div class="shot"><img loading="lazy" src="assets/form.webp" width="1280" height="760" alt="Create form with schema validation messages" /></div><figcaption><b>Forms.</b> <code>minLength</code>, <code>pattern</code>, <code>format</code> enforced; server 422s land on fields.</figcaption></figure>
+          <figure><div class="shot"><img loading="lazy" src="assets/crud-list.webp" width="1280" height="760" alt="Swagger Petstore list page with search, filters and actions" /></div><figcaption><b>CRUD.</b> Swagger Petstore, straight from its spec.</figcaption></figure>
+          <figure><div class="shot"><img loading="lazy" src="assets/k8s.webp" width="1280" height="722" alt="Kubernetes API with 1,146 operations and menu search" /></div><figcaption><b>Scale.</b> Kubernetes: 1,146 operations, searchable menu.</figcaption></figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="demo">
+      <div class="wrap">
+        <h2>Try the demo</h2>
+        <p class="sub">The sample APIs run in your browser (a service worker answers their requests), so nothing leaves your machine.</p>
+        <div class="demo-list">
+          <a class="card" href="demo/?spec=%2FAdaptive-Generative-UI-Library%2Fdemo%2Fexamples%2Fhelpdesk-secured.json"><h3>Helpdesk (secured) →</h3><span>OpenID Connect sign-in with PKCE. Sign in as Lan (admin), Minh (agent) or Vy (viewer) and watch the UI change.</span></a>
+          <a class="card" href="demo/?spec=%2FAdaptive-Generative-UI-Library%2Fdemo%2Fexamples%2Ftarot-chat.json"><h3>Tarot chat →</h3><span>CRUD, an action with a nested result, and a streaming chat — one spec.</span></a>
+          <a class="card" href="demo/"><h3>Swagger Petstore →</h3><span>The classic, against the public Petstore API (results depend on its uptime).</span></a>
+          <a class="card" href="demo/?spec=%2FAdaptive-Generative-UI-Library%2Fdemo%2Fexamples%2Fpetstore-plugins.json"><h3>Plugins + wizard →</h3><span>Custom field widgets and a multi-step form from schema extensions.</span></a>
+        </div>
+        <p class="note" style="margin-top: 16px">Or paste any spec URL into the demo's toolbar (the API must allow cross-origin calls; the Cloudflare deployment adds a proxy).</p>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <h2>Where it fits</h2>
+        <p class="sub">An honest comparison with tools you might already use.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th></th><th>UI comes from</th><th>Good at</th><th>Pick AGUL when</th></tr></thead>
+            <tbody>
+              <tr><td><b>API Platform Admin</b></td><td>Hydra / OpenAPI schema, on react-admin</td><td>Mature component ecosystem</td><td>Your specs are messy real-world ones, or you need actions and chat too</td></tr>
+              <tr><td><b>react-admin / Refine guessers</b></td><td>Data the API returns</td><td>Scaffolding code to edit</td><td>You want no generated code to maintain</td></tr>
+              <tr><td><b>Retool / ToolJet / Appsmith</b></td><td>A person building screens</td><td>Visual builders, many connectors</td><td>The spec should be the source of truth and the UI embeds in your app</td></tr>
+              <tr><td><b>Generative UI (CopilotKit, A2UI…)</b></td><td>An LLM, per conversation turn</td><td>Free-form, novel UI</td><td>You need predictable, complete CRUD at one LLM call per spec — or none</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span>AGUL · MIT licensed · React, Ant Design, SWR</span>
+      <span><a href="https://github.com/tuannx/Adaptive-Generative-UI-Library#readme">Docs</a> · <a href="https://github.com/tuannx/Adaptive-Generative-UI-Library/blob/claude/openapi-react-ui-generator-011CV2PyuxDZYoTZQeiXSouW/docs/auth.md">Auth guide</a> · <a href="https://github.com/tuannx/Adaptive-Generative-UI-Library/blob/claude/openapi-react-ui-generator-011CV2PyuxDZYoTZQeiXSouW/docs/ui-decisions.md">UI decisions</a></span>
+    </div>
+  </footer>
+</body>
+</html>

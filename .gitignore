@@ -32,3 +32,4 @@ blob-report/
 # Cloudflare
 .wrangler/
 .dev.vars
+pages-dist

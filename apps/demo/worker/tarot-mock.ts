@@ -119,7 +119,9 @@ function chatStream(message: string, persona: string, sessionId: string): Respon
 
 export async function handleTarotMock(request: Request): Promise<Response> {
   const url = new URL(request.url);
-  const path = url.pathname.slice(TAROT_PREFIX.length).replace(/\/+$/, '') || '/';
+  // the mock may live under a base path (GitHub Pages serves the demo from /<repo>/demo/)
+  const at = url.pathname.indexOf(TAROT_PREFIX);
+  const path = url.pathname.slice(at + TAROT_PREFIX.length).replace(/\/+$/, '') || '/';
   const method = request.method;
   const body = async () => (await request.json().catch(() => ({}))) as Record<string, unknown>;
 
