@@ -1,0 +1,220 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Tarot Chat API",
+    "version": "0.3.0",
+    "description": "Sample backend for an AI tarot reader: card catalogue, readings, reader personas and a streaming chat."
+  },
+  "servers": [{ "url": "../mock/tarot" }],
+  "tags": [
+    { "name": "chat", "description": "Talk to the reader" },
+    { "name": "readings", "description": "Card draws and their interpretation" },
+    { "name": "cards", "description": "Card catalogue" },
+    { "name": "personas", "description": "Reader personalities" },
+    { "name": "ops", "description": "Operations" }
+  ],
+  "paths": {
+    "/chat": {
+      "post": {
+        "tags": ["chat"],
+        "operationId": "chatWithReader",
+        "summary": "Chat with the reader",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["message"],
+                "properties": {
+                  "message": { "type": "string", "description": "What the user asks the reader" },
+                  "session_id": { "type": "string" },
+                  "history": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": { "role": { "type": "string", "enum": ["user", "assistant"] }, "content": { "type": "string" } }
+                    }
+                  },
+                  "persona": { "type": "string", "enum": ["mystic", "pragmatic", "playful"], "default": "mystic" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Server-sent events: `data: {\"delta\": \"...\"}` chunks, then `data: [DONE]`",
+            "content": { "text/event-stream": { "schema": { "type": "string" } } }
+          }
+        }
+      }
+    },
+    "/readings/draw": {
+      "post": {
+        "tags": ["readings"],
+        "operationId": "drawReading",
+        "summary": "Draw a reading",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["question", "spread"],
+                "properties": {
+                  "question": { "type": "string" },
+                  "spread": { "type": "string", "enum": ["one-card", "three-card", "celtic-cross"] },
+                  "allow_reversed": { "type": "boolean", "default": true }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "The drawn reading", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Reading" } } } }
+        }
+      }
+    },
+    "/readings": {
+      "get": {
+        "tags": ["readings"],
+        "operationId": "listReadings",
+        "summary": "Readings",
+        "parameters": [{ "name": "spread", "in": "query", "schema": { "type": "string", "enum": ["one-card", "three-card", "celtic-cross"] } }],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "readings": { "type": "array", "items": { "$ref": "#/components/schemas/Reading" } }, "total": { "type": "integer" } } } } }
+          }
+        }
+      }
+    },
+    "/readings/{readingId}": {
+      "parameters": [{ "name": "readingId", "in": "path", "required": true, "schema": { "type": "string" } }],
+      "get": {
+        "tags": ["readings"],
+        "operationId": "getReading",
+        "summary": "Reading detail",
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Reading" } } } } }
+      },
+      "delete": {
+        "tags": ["readings"],
+        "operationId": "deleteReading",
+        "responses": { "204": { "description": "Deleted" } }
+      }
+    },
+    "/cards": {
+      "get": {
+        "tags": ["cards"],
+        "operationId": "listCards",
+        "summary": "Cards",
+        "parameters": [{ "name": "arcana", "in": "query", "schema": { "type": "string", "enum": ["major", "minor"] } }],
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Card" } } } } } }
+      }
+    },
+    "/cards/{cardId}": {
+      "get": {
+        "tags": ["cards"],
+        "operationId": "getCard",
+        "summary": "Card detail",
+        "parameters": [{ "name": "cardId", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Card" } } } } }
+      }
+    },
+    "/personas": {
+      "get": {
+        "tags": ["personas"],
+        "operationId": "listPersonas",
+        "summary": "Personas",
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Persona" } } } } } }
+      },
+      "post": {
+        "tags": ["personas"],
+        "operationId": "createPersona",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Persona" } } } },
+        "responses": { "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Persona" } } } } }
+      }
+    },
+    "/personas/{personaId}": {
+      "parameters": [{ "name": "personaId", "in": "path", "required": true, "schema": { "type": "string" } }],
+      "get": {
+        "tags": ["personas"],
+        "operationId": "getPersona",
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Persona" } } } } }
+      },
+      "patch": {
+        "tags": ["personas"],
+        "operationId": "updatePersona",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Persona" } } } },
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Persona" } } } } }
+      },
+      "delete": {
+        "tags": ["personas"],
+        "operationId": "deletePersona",
+        "responses": { "204": { "description": "Deleted" } }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": ["ops"],
+        "operationId": "health",
+        "summary": "Liveness probe",
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "status": { "type": "string" } } } } } } }
+      }
+    },
+    "/admin/cache/flush": {
+      "post": {
+        "tags": ["ops"],
+        "operationId": "flushInterpretationCache",
+        "summary": "Flush interpretation cache",
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "flushed": { "type": "integer" } } } } } } }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Card": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "readOnly": true },
+          "name": { "type": "string" },
+          "arcana": { "type": "string", "enum": ["major", "minor"] },
+          "suit": { "type": "string", "enum": ["none", "wands", "cups", "swords", "pentacles"] },
+          "upright": { "type": "string" },
+          "reversed": { "type": "string" }
+        }
+      },
+      "DrawnCard": {
+        "type": "object",
+        "properties": {
+          "position": { "type": "string" },
+          "card": { "type": "string" },
+          "reversed": { "type": "boolean" }
+        }
+      },
+      "Reading": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "readOnly": true },
+          "question": { "type": "string" },
+          "spread": { "type": "string" },
+          "cards": { "type": "array", "items": { "$ref": "#/components/schemas/DrawnCard" } },
+          "summary": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time", "readOnly": true }
+        }
+      },
+      "Persona": {
+        "type": "object",
+        "required": ["name", "tone"],
+        "properties": {
+          "id": { "type": "string", "readOnly": true },
+          "name": { "type": "string" },
+          "tone": { "type": "string", "enum": ["mystic", "pragmatic", "playful"] },
+          "system_prompt": { "type": "string", "description": "Instructions given to the reader model" },
+          "active": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}
