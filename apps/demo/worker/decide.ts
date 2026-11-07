@@ -11,7 +11,7 @@ import {
   createLlmDecisionProvider,
   hashText,
   type OperationSummary,
-} from '@agul/core';
+} from '@aikitstudio/agul-core';
 
 export interface DecideEnv {
   ANTHROPIC_API_KEY?: string;

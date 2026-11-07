@@ -1,12 +1,12 @@
 /**
- * AGUL Demo App - showcases @agul/react library
+ * AGUL Demo App - showcases @aikitstudio/agul-react library
  */
 
 import { useMemo, useState } from 'react';
 import { App as AntdApp, Upload, Button, Input, Switch, Tooltip } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import type { UploadFile } from 'antd';
-import { AGULRenderer, createHttpDecisionProvider, parseSpecText } from '@agul/react';
+import { AGULRenderer, createHttpDecisionProvider, parseSpecText } from '@aikitstudio/agul-react';
 import { demoFieldPlugins } from './plugins/index.js';
 import './App.css';
 

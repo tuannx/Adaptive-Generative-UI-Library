@@ -1,5 +1,5 @@
 import { ColorPicker, Form } from 'antd';
-import type { AgulFieldPlugin } from '@agul/react';
+import type { AgulFieldPlugin } from '@aikitstudio/agul-react';
 
 export const colorPickerPlugin: AgulFieldPlugin = {
   id: 'color-picker',

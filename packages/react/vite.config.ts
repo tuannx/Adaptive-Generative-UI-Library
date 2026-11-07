@@ -23,7 +23,7 @@ export default defineConfig({
         'swr',
         'dayjs',
         'js-yaml',
-        '@agul/core',
+        '@aikitstudio/agul-core',
       ],
     },
   },

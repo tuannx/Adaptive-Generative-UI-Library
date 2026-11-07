@@ -27,7 +27,7 @@
     "pages:build": "node scripts/build-pages.mjs"
   },
   "devDependencies": {
-    "@agul/mcp": "0.1.0",
+    "@aikitstudio/agul-mcp": "0.1.0",
     "@changesets/cli": "^2.29.8",
     "@playwright/test": "^1.56.1",
     "esbuild": "^0.28.2",

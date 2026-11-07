@@ -1,14 +1,14 @@
 # AGUL - Adaptive Generative UI Library
 
-> **OpenAPI → React UI** for AI Agents. Monorepo with `@agul/core`, `@agul/react`, and demo app.
+> **OpenAPI → React UI** for AI Agents. Monorepo with `@aikitstudio/agul-core`, `@aikitstudio/agul-react`, and demo app.
 
 ## Install
 
 ```bash
-npm install @agul/react
+npm install @aikitstudio/agul-react
 ```
 
-`@agul/react` includes `@agul/core` as a dependency. Peer dependencies (install in your app):
+`@aikitstudio/agul-react` includes `@aikitstudio/agul-core` as a dependency. Peer dependencies (install in your app):
 
 ```bash
 npm install react react-dom antd @ant-design/icons axios dayjs swr react-router-dom
@@ -29,7 +29,7 @@ npm run swarm:next   # pick next GitHub swarm task
 ## Library Usage (Agent-friendly)
 
 ```tsx
-import { AGULRenderer } from '@agul/react';
+import { AGULRenderer } from '@aikitstudio/agul-react';
 
 <AGULRenderer specUrl="/openapi.json" baseUrl="https://api.example.com" />
 ```
@@ -43,14 +43,14 @@ Inside an existing router, mount it under a splat route — AGUL detects the hos
 Or programmatic:
 
 ```ts
-import { createAGULFromSpec } from '@agul/react';
+import { createAGULFromSpec } from '@aikitstudio/agul-react';
 
 const { api, resources, routes, menu } = await createAGULFromSpec(openApiJson);
 ```
 
 ## How It Works
 
-`@agul/core` turns the spec into **resources** (`buildResources`): endpoints are grouped by collection path, and each
+`@aikitstudio/agul-core` turns the spec into **resources** (`buildResources`): endpoints are grouped by collection path, and each
 resource carries its `list` / `detail` / `create` / `update` / `remove` operations plus a fully dereferenced record schema.
 
 | Spec | Generated page |
@@ -88,6 +88,24 @@ The Cloudflare Worker includes a `/decide` route backed by Claude (`wrangler sec
 Details, provider API and limits: [docs/ui-decisions.md](./docs/ui-decisions.md). Click **Tarot Chat** in the
 demo for a worked example (CRUD + actions + streaming chat).
 
+### Presenting data
+
+Read-only values are formatted from the schema: money, percent, numbers, dates, emails, links, images, and
+status values as coloured tags (`format`, then the field name, then the value). Pin a field with
+`x-agul-display: currency | percent | number | date | datetime | status | email | url | image | tags | text`
+(or `{ kind: currency, currency: EUR }`).
+
+Names only suggest money (`price`, `amount`, `cost`, `fee`, …) and percent (`percent`, `pct`). Without a
+currency code, money shows as a plain number with 2 decimals, not as USD. A percent value of 42 means 42%; set
+`maximum: 1` or `{ kind: percent, scale: fraction }` when 0.42 means 42%. `total`, `balance`, `rate` and `ratio`
+stay plain numbers unless `format` or `x-agul-display` says otherwise.
+
+Data also gets a presentation, not only a table: a record with several numbers shows KPI cards on top, rows
+with a title and an image can switch to a card grid, dated rows to a timeline. Lists keep the table by default
+and offer the other view; set `x-agul-present: cards | timeline | table` on the item schema (or `stats | record`
+on a record schema) to pick it. The planner is pure (`planPresentation` in `@aikitstudio/agul-core`), so headless hosts
+draw the same thing.
+
 ### Sign-in and permissions
 
 AGUL signs users in with whatever the spec's `securitySchemes` declare — API key, Basic, Bearer, OAuth 2
@@ -111,11 +129,11 @@ proxy (toggle "Proxy / Direct" in the toolbar); the library equivalent is `<AGUL
 ```bash
 # From your machine (opens a browser to log in once):
 npx wrangler login
-npm run build && npm run deploy --workspace=@agul/demo
+npm run build && npm run deploy --workspace=@aikitstudio/agul-demo
 # → https://agul-demo.<your-subdomain>.workers.dev
 
 # Local check with the real Workers runtime:
-npm run build && npm run cf:dev --workspace=@agul/demo   # http://localhost:8787
+npm run build && npm run cf:dev --workspace=@aikitstudio/agul-demo   # http://localhost:8787
 ```
 
 Or from GitHub: copy `docs/github-workflows/deploy-demo.yml` to `.github/workflows/`, add repository
@@ -128,15 +146,19 @@ Variables in the Cloudflare dashboard). Add your own API's host there; never set
 ## MCP Server (Agents)
 
 ```bash
-npm install @agul/mcp
-# Cursor MCP config: { "command": "npx", "args": ["-y", "@agul/mcp"] }
+npm install @aikitstudio/agul-mcp
+# Cursor MCP config: { "command": "npx", "args": ["-y", "@aikitstudio/agul-mcp"] }
 ```
 
 Tool `generate_ui_from_openapi` — pass OpenAPI JSON, get routes, menu, React embed snippet.
 
 ## Publishing
 
-Packages `@agul/core`, `@agul/react`, and `@agul/mcp` are versioned with [Changesets](https://github.com/changesets/changesets) and published by the `Publish` workflow with npm trusted publishing (no `NPM_TOKEN`). It runs only on a `v*` tag or a manual run. Steps, including the one-time setup, are in [docs/releasing.md](docs/releasing.md).
+<<<<<<< HEAD
+Packages `@aikitstudio/agul-core`, `@aikitstudio/agul-react`, and `@aikitstudio/agul-mcp` are versioned with [Changesets](https://github.com/changesets/changesets) and published by the `Publish` workflow with npm trusted publishing (no `NPM_TOKEN`). It runs only on a `v*` tag or a manual run. Steps, including the one-time setup, are in [docs/releasing.md](docs/releasing.md).
+=======
+Packages `@aikitstudio/agul-core`, `@aikitstudio/agul-react`, and `@aikitstudio/agul-mcp` are versioned with [Changesets](https://github.com/changesets/changesets). The release workflow opens a version PR and publishes to npm when merged (requires `NPM_TOKEN` secret).
+>>>>>>> origin/claude/openapi-react-ui-generator-011CV2PyuxDZYoTZQeiXSouW
 
 ```bash
 npm run changeset          # describe your change
@@ -147,10 +169,10 @@ npm run verify-pack        # verify tarballs before publish
 ## Monorepo Structure
 
 ```
-packages/core/   @agul/core   — parser, generator (no React)
-packages/react/  @agul/react  — AGULRenderer, CRUD views
-packages/mcp/    @agul/mcp    — MCP server for agents
-apps/demo/       @agul/demo   — Vite demo app
+packages/core/   @aikitstudio/agul-core   — parser, generator (no React)
+packages/react/  @aikitstudio/agul-react  — AGULRenderer, CRUD views
+packages/mcp/    @aikitstudio/agul-mcp    — MCP server for agents
+apps/demo/       @aikitstudio/agul-demo   — Vite demo app
 apps/validate-consumer/      — ship-validate: workspace import smoke test
 ```
 

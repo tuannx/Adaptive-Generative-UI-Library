@@ -1,6 +1,6 @@
 /// <reference types="node" />
 import { describe, it, expect, vi } from 'vite-plus/test';
-import type { SecurityScheme } from '@agul/core';
+import type { SecurityScheme } from '@aikitstudio/agul-core';
 import { AgulSessionStore, describeUser, grantsFromCredentials, isApiUrl, signRequest } from './session.js';
 import { refreshCredential, requestToken } from './oauth.js';
 import { createAgulHttp } from '../http/client.js';
