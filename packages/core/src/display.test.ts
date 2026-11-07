@@ -9,8 +9,29 @@ describe('resolveDisplay', () => {
     });
     expect(resolveDisplay('price', { type: 'string', format: 'date' })).toEqual({ kind: 'date' });
     expect(resolveDisplay('totalAmount', { type: 'number' })).toEqual({ kind: 'currency' });
-    expect(resolveDisplay('conversionRate', { type: 'number' })).toEqual({ kind: 'percent' });
+    expect(resolveDisplay('discountPct', { type: 'number' })).toEqual({ kind: 'percent' });
     expect(resolveDisplay('count', { type: 'integer' })).toEqual({ kind: 'number' });
+  });
+
+  it('does not guess money or percent from total, balance, rate or ratio', () => {
+    expect(resolveDisplay('total', { type: 'integer' })).toEqual({ kind: 'number' });
+    expect(resolveDisplay('balance', { type: 'number' })).toEqual({ kind: 'number' });
+    expect(resolveDisplay('exchangeRate', { type: 'number' })).toEqual({ kind: 'number' });
+    expect(resolveDisplay('heartRate', { type: 'integer' })).toEqual({ kind: 'number' });
+    expect(resolveDisplay('ratio', { type: 'number' })).toEqual({ kind: 'number' });
+    expect(resolveDisplay('conversionRate', { type: 'number', format: 'percent' })).toEqual({ kind: 'percent' });
+  });
+
+  it('reads the percent scale from x-agul-display or a maximum of 1', () => {
+    expect(resolveDisplay('share', { type: 'number', 'x-agul-display': { kind: 'percent', scale: 'fraction' } })).toEqual({
+      kind: 'percent',
+      currency: undefined,
+      scale: 'fraction',
+    });
+    expect(resolveDisplay('conversionRate', { type: 'number', format: 'percent', maximum: 1 })).toEqual({
+      kind: 'percent',
+      scale: 'fraction',
+    });
   });
 
   it('ignores an unknown x-agul-display value', () => {
@@ -49,10 +70,12 @@ describe('formatDisplayValue', () => {
   const locale = 'en-US';
 
   it('formats money, percent and numbers', () => {
-    expect(formatDisplayValue(1234.5, { kind: 'currency' }, { locale })).toBe('$1,234.50');
+    expect(formatDisplayValue(1234.5, { kind: 'currency' }, { locale })).toBe('1,234.50');
+    expect(formatDisplayValue(1234.5, { kind: 'currency', currency: 'USD' }, { locale })).toBe('$1,234.50');
     expect(formatDisplayValue('99', { kind: 'currency', currency: 'EUR' }, { locale })).toBe('€99.00');
-    expect(formatDisplayValue(0.425, { kind: 'percent' }, { locale })).toBe('42.5%');
+    expect(formatDisplayValue(0.425, { kind: 'percent', scale: 'fraction' }, { locale })).toBe('42.5%');
     expect(formatDisplayValue(42, { kind: 'percent' }, { locale })).toBe('42%');
+    expect(formatDisplayValue(1, { kind: 'percent' }, { locale })).toBe('1%');
     expect(formatDisplayValue(1234567, { kind: 'number' }, { locale })).toBe('1,234,567');
   });
 

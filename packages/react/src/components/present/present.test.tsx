@@ -11,7 +11,7 @@ const html = (node: React.ReactNode) => renderToStaticMarkup(<>{node}</>);
 
 describe('renderValue', () => {
   it('formats by schema and name', () => {
-    expect(html(renderValue(1234.5, 'price', { type: 'number' }))).toContain('$1,234.50');
+    expect(html(renderValue(1234.5, 'price', { type: 'number' }))).toContain('>1,234.50<');
     expect(html(renderValue('failed', 'status', { type: 'string', enum: ['ok', 'failed'] }))).toContain('ant-tag-error');
     expect(html(renderValue('a@b.co', 'contact'))).toContain('mailto:a@b.co');
     expect(html(renderValue(null, 'x'))).toContain('-');
@@ -31,7 +31,7 @@ describe('presentation blocks', () => {
     expect(out).toContain('Fluffy');
     expect(out).toContain('src="https://e.com/f.jpg"');
     expect(out).toContain('ant-tag-success');
-    expect(out).toContain('$120.00');
+    expect(out).toContain('120.00');
   });
 
   it('TimelineView orders newest first', () => {
@@ -48,7 +48,7 @@ describe('presentation blocks', () => {
     const record = { revenue: 1200, orders: 34, region: 'US' };
     const out = html(<StatRow record={record} metrics={planRecord(record).metrics} />);
     expect(out).toContain('agul-stat-revenue');
-    expect(out).toContain('$1,200.00');
+    expect(out).toContain('1,200.00');
     expect(out).not.toContain('agul-stat-region');
   });
 });

@@ -31,12 +31,16 @@ export type DisplayTone = 'positive' | 'negative' | 'attention' | 'neutral';
 
 export interface DisplayHint {
   kind: DisplayKind;
-  /** ISO 4217 code for `currency`; defaults to USD. */
+  /** ISO 4217 code for `currency`. Without one, money shows as a plain number with 2 decimals. */
   currency?: string;
+  /** For `percent`: `fraction` means 0.42 is 42%; `percent` (the default) means 42 is 42%. */
+  scale?: 'fraction' | 'percent';
 }
 
-const CURRENCY_NAME = /(price|amount|cost|total|revenue|balance|salary|fee|budget|spend|income|mrr|arr)$/i;
-const PERCENT_NAME = /(percent|percentage|pct|ratio|rate)$/i;
+// `total`, `balance`, `rate` and `ratio` are left out on purpose: they are often counts or plain numbers
+// (a pagination total, an exchange rate, a heart rate). Use `format` or `x-agul-display` for those.
+const CURRENCY_NAME = /(price|amount|cost|revenue|salary|fee|budget|spend|income|mrr|arr)$/i;
+const PERCENT_NAME = /(percent|percentage|pct)$/i;
 const STATUS_NAME = /^(status|state|stage|phase|priority|severity|level)$/i;
 const IMAGE_NAME = /(image|img|photo|picture|avatar|thumbnail|thumb|cover|logo|icon)(url|uri|src)?$/i;
 const DATE_NAME = /(date|_at|day|time|stamp|created|updated|deadline|due|_on)$/i;
@@ -53,9 +57,13 @@ function readExtension(schema: SchemaObject | undefined): DisplayHint | undefine
   const raw = schema?.['x-agul-display'];
   if (typeof raw === 'string' && (DISPLAY_KINDS as readonly string[]).includes(raw)) return { kind: raw as DisplayKind };
   if (raw && typeof raw === 'object') {
-    const { kind, currency } = raw as { kind?: unknown; currency?: unknown };
+    const { kind, currency, scale } = raw as { kind?: unknown; currency?: unknown; scale?: unknown };
     if (typeof kind === 'string' && (DISPLAY_KINDS as readonly string[]).includes(kind)) {
-      return { kind: kind as DisplayKind, currency: typeof currency === 'string' ? currency.toUpperCase() : undefined };
+      return {
+        kind: kind as DisplayKind,
+        currency: typeof currency === 'string' ? currency.toUpperCase() : undefined,
+        scale: scale === 'fraction' || scale === 'percent' ? scale : undefined,
+      };
     }
   }
   return undefined;
@@ -94,8 +102,18 @@ function fromValue(value: unknown): DisplayKind {
   return 'text';
 }
 
+/** A percent field whose schema caps it at 1 holds fractions (0.42 = 42%). */
+function withPercentScale(hint: DisplayHint, schema: SchemaObject | undefined): DisplayHint {
+  if (hint.kind !== 'percent' || hint.scale) return hint;
+  return typeof schema?.maximum === 'number' && schema.maximum <= 1 ? { ...hint, scale: 'fraction' } : hint;
+}
+
 /** Picks how to show one field. `value` is a sample used only when the schema and name say nothing. */
 export function resolveDisplay(name: string, schema?: SchemaObject, value?: unknown): DisplayHint {
+  return withPercentScale(resolveKind(name, schema, value), schema);
+}
+
+function resolveKind(name: string, schema: SchemaObject | undefined, value: unknown): DisplayHint {
   const extension = readExtension(schema);
   if (extension) return extension;
 
@@ -151,13 +169,16 @@ export function formatDisplayValue(value: unknown, hint: DisplayHint, options: F
   switch (hint.kind) {
     case 'currency':
       if (Number.isFinite(number)) {
-        return new Intl.NumberFormat(locale, { style: 'currency', currency: hint.currency ?? 'USD' }).format(number);
+        // No currency code means we don't know the currency, so no symbol: guessing USD would be wrong elsewhere.
+        if (!hint.currency) {
+          return new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(number);
+        }
+        return new Intl.NumberFormat(locale, { style: 'currency', currency: hint.currency }).format(number);
       }
       break;
     case 'percent':
       if (Number.isFinite(number)) {
-        // 0.42 and 42 both mean 42%: values within [-1, 1] are fractions.
-        const fraction = Math.abs(number) <= 1 ? number : number / 100;
+        const fraction = hint.scale === 'fraction' ? number : number / 100;
         return new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 1 }).format(fraction);
       }
       break;

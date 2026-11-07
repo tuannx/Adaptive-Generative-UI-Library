@@ -95,6 +95,11 @@ status values as coloured tags (`format`, then the field name, then the value). 
 `x-agul-display: currency | percent | number | date | datetime | status | email | url | image | tags | text`
 (or `{ kind: currency, currency: EUR }`).
 
+Names only suggest money (`price`, `amount`, `cost`, `fee`, …) and percent (`percent`, `pct`). Without a
+currency code, money shows as a plain number with 2 decimals, not as USD. A percent value of 42 means 42%; set
+`maximum: 1` or `{ kind: percent, scale: fraction }` when 0.42 means 42%. `total`, `balance`, `rate` and `ratio`
+stay plain numbers unless `format` or `x-agul-display` says otherwise.
+
 Data also gets a presentation, not only a table: a record with several numbers shows KPI cards on top, rows
 with a title and an image can switch to a card grid, dated rows to a timeline. Lists keep the table by default
 and offer the other view; set `x-agul-present: cards | timeline | table` on the item schema (or `stats | record`
