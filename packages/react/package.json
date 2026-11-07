@@ -53,7 +53,7 @@
   },
   "dependencies": {
     "@agul/core": "0.1.0",
-    "js-yaml": "^4.3.2"
+    "js-yaml": "^5.5.0"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",

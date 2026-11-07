@@ -508,8 +508,9 @@ function useFetchedSpec(specUrl: string | undefined, proxyUrl: string | undefine
 export async function parseSpecText(text: string): Promise<Record<string, unknown>> {
   const trimmed = text.trimStart();
   if (trimmed.startsWith('{')) return JSON.parse(text);
-  const { load } = await import('js-yaml');
-  const doc = load(text);
+  const { load, CORE_SCHEMA, mergeTag } = await import('js-yaml');
+  // js-yaml 5 parses YAML 1.2 core without `<<` merge keys; specs often use them, so turn them back on.
+  const doc = load(text, { schema: CORE_SCHEMA.withTags(mergeTag) });
   if (!doc || typeof doc !== 'object') throw new Error('Spec is neither JSON nor a YAML mapping');
   return doc as Record<string, unknown>;
 }
