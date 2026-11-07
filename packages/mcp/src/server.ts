@@ -3,7 +3,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import { generateUIFromOpenAPI, generateUIFromJsonSchema } from './generate-ui.js';
 
-const openApiSpecSchema = z.record(z.unknown());
+const openApiSpecSchema = z.record(z.string(), z.unknown());
 
 export function createAGULMcpServer(): McpServer {
   const server = new McpServer({
