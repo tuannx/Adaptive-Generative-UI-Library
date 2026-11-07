@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { extractChunkText, readStream } from './stream.js';
 
 function responseFrom(chunks: string[], type: string): Response {

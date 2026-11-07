@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vite-plus/test';
 import tarot from '../../../apps/demo/public/examples/tarot-chat.json' with { type: 'json' };
 import petstore from '../../../apps/demo/public/examples/petstore.json' with { type: 'json' };
 import { parseOpenAPISync } from './parser.js';

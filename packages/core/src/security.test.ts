@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { parseOpenAPISync } from './parser.js';
 import { planUi } from './decisions.js';
 import { canAccessEndpoint, decodeJwt, grantsFromClaims, isPublicOperation, requiredRoles } from './security.js';

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vite-plus/test';
 import type Anthropic from '@anthropic-ai/sdk';
 import tarot from '../public/examples/tarot-chat.json' with { type: 'json' };
 import { heuristicDecisions, parseOpenAPISync, summarizeOperations } from '@agul/core';
