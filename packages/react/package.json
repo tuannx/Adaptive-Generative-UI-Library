@@ -1,5 +1,5 @@
 {
-  "name": "@agul/react",
+  "name": "@aikitstudio/agul-react",
   "version": "0.1.0",
   "description": "React components and AGULRenderer for OpenAPI-driven dynamic UI",
   "license": "MIT",
@@ -76,7 +76,7 @@
     }
   },
   "dependencies": {
-    "@agul/core": "0.1.0",
+    "@aikitstudio/agul-core": "0.1.0",
     "js-yaml": "^5.5.0"
   },
   "devDependencies": {

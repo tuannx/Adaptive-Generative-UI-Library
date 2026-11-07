@@ -17,7 +17,7 @@ export default defineConfig({
       js: '#!/usr/bin/env node',
     },
     deps: {
-      neverBundle: ['@agul/core', '@modelcontextprotocol/sdk', 'zod'],
+      neverBundle: ['@aikitstudio/agul-core', '@modelcontextprotocol/sdk', 'zod'],
     },
   },
 });

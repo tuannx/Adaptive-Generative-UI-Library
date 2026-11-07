@@ -1,4 +1,4 @@
-import { readFlowStep, type AgulFlowStep } from '@agul/core';
+import { readFlowStep, type AgulFlowStep } from '@aikitstudio/agul-core';
 import { responseError } from '../http/errors.js';
 
 export interface FlowClientOptions {

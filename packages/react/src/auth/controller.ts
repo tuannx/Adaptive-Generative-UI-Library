@@ -7,7 +7,7 @@ import {
   type AccessGrants,
   type ParsedAPI,
   type SecurityScheme,
-} from '@agul/core';
+} from '@aikitstudio/agul-core';
 import {
   AgulSessionStore,
   describeUser,

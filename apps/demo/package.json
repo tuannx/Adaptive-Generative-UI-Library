@@ -1,5 +1,5 @@
 {
-  "name": "@agul/demo",
+  "name": "@aikitstudio/agul-demo",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -16,8 +16,8 @@
     "cf:types": "wrangler types worker/worker-configuration.d.ts"
   },
   "dependencies": {
-    "@agul/core": "0.1.0",
-    "@agul/react": "0.1.0",
+    "@aikitstudio/agul-core": "0.1.0",
+    "@aikitstudio/agul-react": "0.1.0",
     "@ant-design/icons": "^6.3.4",
     "@anthropic-ai/sdk": "^1.3.0",
     "antd": "^6.7.0",

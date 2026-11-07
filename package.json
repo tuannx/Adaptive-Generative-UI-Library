@@ -18,7 +18,7 @@
     "lint": "turbo typecheck",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "turbo build --filter=@agul/core --filter=@agul/react --filter=@agul/mcp && changeset publish",
+    "release": "turbo build --filter=@aikitstudio/agul-core --filter=@aikitstudio/agul-react --filter=@aikitstudio/agul-mcp && changeset publish",
     "verify-pack": "node scripts/verify-pack.mjs",
     "bundle-report": "node scripts/bundle-report.mjs",
     "swarm:status": "node scripts/swarm-status.mjs",
@@ -28,7 +28,7 @@
     "pages:build": "node scripts/build-pages.mjs"
   },
   "devDependencies": {
-    "@agul/mcp": "0.1.0",
+    "@aikitstudio/agul-mcp": "0.1.0",
     "@changesets/cli": "^2.29.8",
     "@playwright/test": "^1.56.1",
     "esbuild": "^0.28.2",
