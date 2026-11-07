@@ -154,11 +154,15 @@ Tool `generate_ui_from_openapi` — pass OpenAPI JSON, get routes, menu, React e
 
 ## Publishing
 
+<<<<<<< HEAD
+Packages `@aikitstudio/agul-core`, `@aikitstudio/agul-react`, and `@aikitstudio/agul-mcp` are versioned with [Changesets](https://github.com/changesets/changesets) and published by the `Publish` workflow with npm trusted publishing (no `NPM_TOKEN`). It runs only on a `v*` tag or a manual run. Steps, including the one-time setup, are in [docs/releasing.md](docs/releasing.md).
+=======
 Packages `@aikitstudio/agul-core`, `@aikitstudio/agul-react`, and `@aikitstudio/agul-mcp` are versioned with [Changesets](https://github.com/changesets/changesets). The release workflow opens a version PR and publishes to npm when merged (requires `NPM_TOKEN` secret).
+>>>>>>> origin/claude/openapi-react-ui-generator-011CV2PyuxDZYoTZQeiXSouW
 
 ```bash
 npm run changeset          # describe your change
-npm run version-packages   # bump versions (usually via CI)
+npm run version-packages   # bump versions and changelogs, then commit
 npm run verify-pack        # verify tarballs before publish
 ```
 
