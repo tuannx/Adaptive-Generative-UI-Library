@@ -7,7 +7,7 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "agul-mcp": "./dist/cli.js"
+    "agul-mcp": "dist/cli.js"
   },
   "exports": {
     ".": {
@@ -39,7 +39,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/tuannx/Adaptive-Generative-UI-Library.git",
+    "url": "git+https://github.com/tuannx/Adaptive-Generative-UI-Library.git",
     "directory": "packages/mcp"
   },
   "keywords": [
