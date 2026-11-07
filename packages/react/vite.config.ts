@@ -5,7 +5,7 @@ export default defineConfig({
     environment: 'node',
   },
   pack: {
-    entry: ['src/index.ts'],
+    entry: { index: 'src/index.ts', 'headless/index': 'src/headless/index.ts' },
     format: ['esm'],
     fixedExtension: false,
     dts: false,

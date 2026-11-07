@@ -31,6 +31,21 @@ export default function Admin() {
 | `proxyUrl` | Same-origin CORS proxy prefix |
 | `plugins` | Custom field widgets |
 
+### Headless flows
+
+`@ai-kit/agul-react/headless` runs a server-driven flow (`x-agul-view: flow`) with no antd, for a page that draws with its
+own components. It needs only `react`; the antd peers above are optional and are not installed for it.
+
+```bash
+npm install @ai-kit/agul-react @ai-kit/agul-core react react-dom
+```
+
+```tsx
+import { useAgulFlow } from '@ai-kit/agul-react/headless';
+
+const flow = useAgulFlow({ startUrl: '/consult/sessions', answerUrl: (id) => `/consult/sessions/${id}/answers`, stepPath: 'flow' });
+```
+
 Guides: [sign-in and access control](https://github.com/tuannx/Adaptive-Generative-UI-Library/blob/main/docs/auth.md),
 [UI decisions](https://github.com/tuannx/Adaptive-Generative-UI-Library/blob/main/docs/ui-decisions.md).
 

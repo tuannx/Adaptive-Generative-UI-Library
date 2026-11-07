@@ -11,6 +11,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./headless": {
+      "types": "./dist/headless/index.d.ts",
+      "import": "./dist/headless/index.js"
     }
   },
   "files": [
@@ -50,6 +54,26 @@
     "react-dom": "^18.0.0 || ^19.0.0",
     "react-router-dom": "^6.0.0 || ^7.0.0",
     "swr": "^2.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@ant-design/icons": {
+      "optional": true
+    },
+    "antd": {
+      "optional": true
+    },
+    "axios": {
+      "optional": true
+    },
+    "dayjs": {
+      "optional": true
+    },
+    "react-router-dom": {
+      "optional": true
+    },
+    "swr": {
+      "optional": true
+    }
   },
   "dependencies": {
     "@ai-kit/agul-core": "0.1.0",

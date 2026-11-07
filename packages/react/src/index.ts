@@ -19,6 +19,10 @@ export type { GetAuthHeaders, AgulAuthConfig } from './http/client.js';
 
 export { PluginProvider, useAgulPlugins } from './plugins/PluginContext.js';
 export { resolveFieldPlugin } from './plugins/registry.js';
+export { choiceCardsPlugin, gameWidgetPlugins, progressXpPlugin, scoreMeterPlugin } from './plugins/game-widgets.js';
+export { ChoiceCards } from './components/widgets/ChoiceCards.js';
+export { ScoreMeter } from './components/widgets/ScoreMeter.js';
+export { ProgressXp } from './components/widgets/ProgressXp.js';
 export { readSchemaExtension, readSchemaWidget, readWizardConfig } from './plugins/schema-extensions.js';
 export type {
   AgulFieldPlugin,
