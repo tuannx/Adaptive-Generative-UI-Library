@@ -33,7 +33,7 @@ export function CardGrid({ rows, plan, onOpen, rowKey = (_, index) => String(ind
                 ) : undefined
               }
             >
-              <Space direction="vertical" size={4} style={{ width: '100%' }}>
+              <Space orientation="vertical" size={4} style={{ width: '100%' }}>
                 <Space wrap>
                   <Typography.Text strong>{String(title ?? '-')}</Typography.Text>
                   {status !== undefined && status !== null && status !== '' && (

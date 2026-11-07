@@ -28,8 +28,8 @@ export function TimelineView({ rows, plan, onOpen }: TimelineViewProps) {
         const preset = toneColor(statusTone(status));
         return {
           color: status !== undefined ? TIMELINE_COLOR[preset] : 'blue',
-          children: (
-            <Space direction="vertical" size={2}>
+          content: (
+            <Space orientation="vertical" size={2}>
               {dateKey && dateHint && (
                 <Typography.Text type="secondary">{formatDisplayValue(row[dateKey], dateHint)}</Typography.Text>
               )}
