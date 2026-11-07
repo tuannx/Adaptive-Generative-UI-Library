@@ -47,13 +47,18 @@ export function ResultView({ value }: { value: unknown }) {
 
   if (isRow(value)) {
     return (
-      <Descriptions data-testid="agul-result-record" bordered column={1} size="small">
-        {Object.entries(value).map(([key, field]) => (
-          <Descriptions.Item key={key} label={formatLabel(key)}>
-            {Array.isArray(field) && field.every(isRow) && field.length > 0 ? <ResultView value={field} /> : renderValue(field, key)}
-          </Descriptions.Item>
-        ))}
-      </Descriptions>
+      <Descriptions
+        data-testid="agul-result-record"
+        bordered
+        column={1}
+        size="small"
+        items={Object.entries(value).map(([key, field]) => ({
+          key,
+          label: formatLabel(key),
+          children:
+            Array.isArray(field) && field.every(isRow) && field.length > 0 ? <ResultView value={field} /> : renderValue(field, key),
+        }))}
+      />
     );
   }
 

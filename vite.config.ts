@@ -13,6 +13,7 @@ export default defineConfig({
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
       'react/only-export-components': ['warn', { allowConstantExport: true }],
+      'typescript/no-deprecated': 'warn',
     },
     ignorePatterns: ['**/dist/**', '**/node_modules/**'],
     options: { typeAware: true, typeCheck: true },

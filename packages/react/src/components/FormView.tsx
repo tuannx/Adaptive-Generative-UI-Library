@@ -204,7 +204,7 @@ export const FormView: React.FC<FormViewProps> = ({ resource, mode }) => {
         <Alert
           type="warning"
           showIcon
-          message="No Schema Available"
+          title="No Schema Available"
           description="Cannot generate form without schema definition"
         />
       )}

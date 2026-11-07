@@ -3,7 +3,7 @@
 // Usage: node scripts/measure-specs.mjs <dir-with-json-or-yaml-specs> [--json]
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, extname, basename } from 'node:path';
-import yaml from 'js-yaml';
+import { load as loadYaml, CORE_SCHEMA, mergeTag } from 'js-yaml';
 import { parseOpenAPISync, planUi, isPrimitiveSchema } from '@agul/core';
 
 const dir = process.argv[2];
@@ -14,7 +14,7 @@ if (!dir) {
 
 function load(file) {
   const text = readFileSync(file, 'utf8');
-  return ['.yaml', '.yml'].includes(extname(file)) ? yaml.load(text) : JSON.parse(text);
+  return ['.yaml', '.yml'].includes(extname(file)) ? loadYaml(text, { schema: CORE_SCHEMA.withTags(mergeTag) }) : JSON.parse(text);
 }
 
 function countColumns(schema) {
