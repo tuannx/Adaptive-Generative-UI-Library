@@ -20,7 +20,7 @@ npm install react react-dom antd @ant-design/icons axios dayjs swr react-router-
 npm install
 npm run dev          # turbo: watch all packages + demo at :5173
 npm run build        # build core → react → demo
-npm run test         # vitest (@agul/core, @agul/mcp)
+npm run test         # vp test (Vite+ / Vitest 5)
 npm run test:e2e     # Playwright demo + MCP validation
 npm run verify-pack  # npm pack + validate-consumer build
 npm run swarm:next   # pick next GitHub swarm task

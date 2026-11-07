@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { generateUIFromOpenAPI, generateUIFromJsonSchema } from './generate-ui.js';
 
 const Pet = { type: 'object', properties: { id: { type: 'integer' }, name: { type: 'string' } } };

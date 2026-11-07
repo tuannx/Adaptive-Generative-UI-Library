@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { isMultiChoice, readChoices, readScore, readXp } from './widgets.js';
 
 describe('readChoices', () => {

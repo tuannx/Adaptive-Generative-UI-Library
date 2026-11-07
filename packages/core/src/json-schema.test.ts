@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { parseJsonSchema, wrapJsonSchemaAsOpenAPI } from './json-schema.js';
 import { generateRoutes } from './generator.js';
 import type { SchemaObject } from './types.js';

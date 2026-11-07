@@ -23,7 +23,7 @@ apps/
 npm install          # once
 npm run dev          # turbo: watch core + react + demo
 npm run build        # build all packages
-npm run test         # vitest (@agul/core, @agul/mcp)
+npm run test         # vp test (Vite+ / Vitest 5)
 npm run test:e2e     # Playwright demo + MCP validation
 npm run typecheck    # TS 7 strict across workspace
 npm run swarm:status # open GitHub issues by phase

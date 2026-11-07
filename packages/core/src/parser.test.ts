@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { parseOpenAPI, getResponseSchema, resolveRef } from './parser.js';
 import { generateRoutes, groupRoutesByTag, generateMenu, getResourceRoot, routesShareResource, buildRouterPath, buildPathParamsFromRecord } from './generator.js';
 

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { planRecord, planRows } from '@agul/core';
 import { ResultView } from '../ResultView.js';

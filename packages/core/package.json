@@ -34,17 +34,16 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsup && tsc -p tsconfig.build.json",
-    "dev": "tsup --watch",
+    "build": "vp pack && tsc -p tsconfig.build.json",
+    "dev": "vp pack --watch",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "lint": "eslint src"
+    "test": "vp test run",
+    "test:watch": "vp test",
+    "lint": "vp lint src"
   },
   "devDependencies": {
-    "tsup": "^8.5.0",
     "typescript": "^7.0.2",
-    "vitest": "^3.2.4"
+    "vite-plus": "1.5.0"
   },
   "homepage": "https://tuannx.github.io/Adaptive-Generative-UI-Library/",
   "bugs": {

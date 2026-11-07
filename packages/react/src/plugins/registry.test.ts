@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { resolveFieldPlugin } from './registry.js';
 import { readWizardConfig } from './schema-extensions.js';
 import type { AgulFieldPlugin } from './types.js';
