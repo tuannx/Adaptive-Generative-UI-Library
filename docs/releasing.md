@@ -1,7 +1,6 @@
 # Releasing to npm
 
-The `Publish` workflow (`.github/workflows/publish.yml`, kept in `docs/github-workflows/publish.yml` until it is
-copied there) publishes `packages/core`, `packages/react` and `packages/mcp`, in that
+The `Publish` workflow (`.github/workflows/publish.yml`) publishes `packages/core`, `packages/react` and `packages/mcp`, in that
 order, with [npm trusted publishing](https://docs.npmjs.com/trusted-publishers) (OIDC). There is no
 `NPM_TOKEN` secret. The workflow builds, tests, typechecks and runs `verify-pack` first, and skips any
 version that is already on npm, so a re-run after a partial failure is safe. Package names come from each
@@ -15,12 +14,6 @@ It runs only when asked:
   off to publish.
 
 ## One-time setup
-
-0. **Install the workflow.** Copy `docs/github-workflows/publish.yml` to `.github/workflows/publish.yml` and
-   delete `.github/workflows/release.yml`, which runs on every push to the default branch and opens a
-   "Version Packages" branch. Commit that yourself: the Claude GitHub App cannot change workflow files.
-   Until then, release.yml cannot publish: the `release` script it calls has been removed, so its
-   publish step fails instead of publishing with an old token.
 
 1. **First publish by hand.** npm's docs only describe adding a trusted publisher on an existing package's
    settings page, so each package has to exist before CI can publish it. On a machine logged in to npm as a member of the

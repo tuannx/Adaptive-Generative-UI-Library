@@ -1,4 +1,3 @@
-# Copy to .github/workflows/publish.yml and delete .github/workflows/release.yml (it runs on every push).
 name: Publish
 
 # Runs only when asked: push a tag like v0.2.0, or start it from the Actions tab.
