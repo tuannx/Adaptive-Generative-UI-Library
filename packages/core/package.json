@@ -44,7 +44,7 @@
   "devDependencies": {
     "tsup": "^8.5.0",
     "typescript": "^7.0.2",
-    "vitest": "^3.2.4"
+    "vitest": "^4.1.12"
   },
   "homepage": "https://tuannx.github.io/Adaptive-Generative-UI-Library/",
   "bugs": {

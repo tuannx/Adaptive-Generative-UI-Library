@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import { describe, it, expect, vi } from 'vitest';
 import type { SecurityScheme } from '@agul/core';
 import { AgulSessionStore, describeUser, grantsFromCredentials, isApiUrl, signRequest } from './session.js';
