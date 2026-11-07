@@ -91,7 +91,7 @@ test.describe('AGUL Demo — real-world spec shapes', () => {
     });
 
     await page.goto('/');
-    await page.getByTestId('demo-spec-url').fill(SPEC_URL);
+    await page.getByTestId('demo-spec-url').locator('input').fill(SPEC_URL);
     await page.getByTestId('demo-toolbar').getByRole('button', { name: 'Load', exact: true }).click();
     await expect(page).toHaveURL(/spec=https/);
 
