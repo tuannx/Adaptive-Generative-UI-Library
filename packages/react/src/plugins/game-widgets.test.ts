@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vite-plus/test';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { Form } from 'antd';
-import type { SchemaObject } from '@agul/core';
+import type { SchemaObject } from '@aikitstudio/agul-core';
 import { renderSchemaFields } from '../components/FormView.js';
 import { gameWidgetPlugins } from './game-widgets.js';
 

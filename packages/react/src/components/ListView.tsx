@@ -16,7 +16,7 @@ import {
   type ListQueryParamBinding,
   type ListQueryState,
   type Resource,
-} from '@agul/core';
+} from '@aikitstudio/agul-core';
 import { useAgulNavigate, useAgulRuntime, useRevalidateList } from '../runtime.js';
 import { describeApiError } from '../http/errors.js';
 import { formatCellValue, formatLabel, unwrapList } from './format.js';

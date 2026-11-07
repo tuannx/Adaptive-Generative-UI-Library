@@ -162,7 +162,7 @@
         <a class="btn primary" href="demo/">Open the live demo →</a>
         <a class="btn" href="https://github.com/tuannx/Adaptive-Generative-UI-Library">View on GitHub</a>
       </div>
-      <div><code class="install"><span class="prompt">$</span> npm install @agul/react</code></div>
+      <div><code class="install"><span class="prompt">$</span> npm install @aikitstudio/agul-react</code></div>
       <div class="note">Packages are being published to npm; until then, build from the repository.</div>
       <div class="shot hero-shot"><img src="assets/roles.webp" width="1280" height="760" alt="AGUL rendering a secured Helpdesk API: tickets table with view, edit and delete actions for an admin" /></div>
     </div>
@@ -178,7 +178,7 @@
           <div class="card"><div class="icon">🔐</div><h3>Sign-in from the spec</h3><p>API key, Basic, Bearer, OAuth 2 (code + PKCE, password, client credentials) and OpenID Connect, with token refresh and a prompt on 401.</p></div>
           <div class="card"><div class="icon">🛡️</div><h3>Roles and scopes</h3><p>Pages, menu entries and buttons the user may not use disappear, from OAuth scopes in <code>security</code> and <code>x-agul-roles</code>.</p></div>
           <div class="card"><div class="icon">🧠</div><h3>LLM-decided layout</h3><p>Optionally let an LLM or your own decision API choose CRUD, action, chat or hidden per operation. Invalid answers are dropped; rules stay the fallback.</p></div>
-          <div class="card"><div class="icon">🤖</div><h3>Agent-ready</h3><p>An MCP server (<code>@agul/mcp</code>) lets coding agents turn a spec into routes, menu and an embed snippet in one tool call.</p></div>
+          <div class="card"><div class="icon">🤖</div><h3>Agent-ready</h3><p>An MCP server (<code>@aikitstudio/agul-mcp</code>) lets coding agents turn a spec into routes, menu and an embed snippet in one tool call.</p></div>
           <div class="card"><div class="icon">🧪</div><h3>Tested on real APIs</h3><p>Measured on 19 public specs — Stripe, GitHub, Kubernetes, Jira, Twilio, NetBox… — 9,000+ operations, 519 resources with full CRUD.</p></div>
         </div>
       </div>
@@ -189,7 +189,7 @@
         <div>
           <h2>One component</h2>
           <p class="sub">Point it at a spec. Mount it at the root, or inside your own router under a splat route.</p>
-<pre><span class="k">import</span> { AGULRenderer } <span class="k">from</span> <span class="s">'@agul/react'</span>;
+<pre><span class="k">import</span> { AGULRenderer } <span class="k">from</span> <span class="s">'@aikitstudio/agul-react'</span>;
 
 <span class="k">export default function</span> <span class="t">Admin</span>() {
   <span class="k">return</span> (

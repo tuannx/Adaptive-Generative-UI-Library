@@ -1,5 +1,5 @@
 import { Form } from 'antd';
-import { isMultiChoice, readChoices } from '@agul/core';
+import { isMultiChoice, readChoices } from '@aikitstudio/agul-core';
 import type { AgulFieldPlugin, AgulFieldRenderContext } from './types.js';
 import { ChoiceCards } from '../components/widgets/ChoiceCards.js';
 import { ScoreMeter } from '../components/widgets/ScoreMeter.js';

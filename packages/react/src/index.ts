@@ -90,7 +90,7 @@ export {
   decodeJwt,
   isPublicOperation,
   requiredRoles,
-} from '@agul/core';
+} from '@aikitstudio/agul-core';
 
 export type {
   ParsedAPI,
@@ -121,4 +121,4 @@ export type {
   OAuthFlows,
   AccessGrants,
   PlanOptions,
-} from '@agul/core';
+} from '@aikitstudio/agul-core';

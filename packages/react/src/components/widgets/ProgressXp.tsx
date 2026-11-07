@@ -1,5 +1,5 @@
 import { Progress, Typography } from 'antd';
-import { readXp, type SchemaObject } from '@agul/core';
+import { readXp, type SchemaObject } from '@aikitstudio/agul-core';
 
 interface ProgressXpProps {
   schema: SchemaObject;

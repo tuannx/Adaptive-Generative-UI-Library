@@ -1,5 +1,5 @@
 import React from 'react';
-import { flowPercent, type AgulFlowStep } from '@agul/core';
+import { flowPercent, type AgulFlowStep } from '@aikitstudio/agul-core';
 import { createFlowClient, type FlowClientOptions } from './flowClient.js';
 
 export type FlowStatus = 'idle' | 'loading' | 'ready' | 'error';

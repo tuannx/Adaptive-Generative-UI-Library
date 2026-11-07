@@ -3,9 +3,9 @@
   "changelog": "@changesets/cli/changelog",
   "commit": false,
   "fixed": [],
-  "linked": [["@agul/core", "@agul/react", "@agul/mcp"]],
+  "linked": [["@aikitstudio/agul-core", "@aikitstudio/agul-react", "@aikitstudio/agul-mcp"]],
   "access": "public",
   "baseBranch": "claude/openapi-react-ui-generator-011CV2PyuxDZYoTZQeiXSouW",
   "updateInternalDependencies": "patch",
-  "ignore": ["@agul/demo", "@agul/validate-consumer"]
+  "ignore": ["@aikitstudio/agul-demo", "@aikitstudio/agul-validate-consumer"]
 }

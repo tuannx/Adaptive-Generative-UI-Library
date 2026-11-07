@@ -1,4 +1,4 @@
-import { decodeJwt, grantsFromClaims, type AccessGrants, type SecurityScheme } from '@agul/core';
+import { decodeJwt, grantsFromClaims, type AccessGrants, type SecurityScheme } from '@aikitstudio/agul-core';
 
 /** A credential the user entered or obtained for one security scheme. */
 export type AgulCredential =

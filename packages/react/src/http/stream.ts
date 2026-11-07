@@ -1,4 +1,4 @@
-import type { StreamFormat } from '@agul/core';
+import type { StreamFormat } from '@aikitstudio/agul-core';
 
 const TEXT_PATHS: string[][] = [
   ['delta', 'text'],
