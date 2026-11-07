@@ -9,7 +9,8 @@ version that is already on npm, so a re-run after a partial failure is safe. Pac
 
 It runs only when asked:
 
-- **Tag:** push `vX.Y.Z` on the default branch. The tag must equal the `packages/core` version.
+- **Tag:** push `vX.Y.Z` on the default branch. The tag must equal the version of at least one package
+  (the packages are linked, so every package bumped in a release shares that version).
 - **Manual:** Actions → Publish → Run workflow. `dry_run` is on by default (pack and check only); turn it
   off to publish.
 
@@ -18,6 +19,8 @@ It runs only when asked:
 0. **Install the workflow.** Copy `docs/github-workflows/publish.yml` to `.github/workflows/publish.yml` and
    delete `.github/workflows/release.yml`, which runs on every push to the default branch and opens a
    "Version Packages" branch. Commit that yourself: the Claude GitHub App cannot change workflow files.
+   Until then, release.yml cannot publish: the `release` script it calls has been removed, so its
+   publish step fails instead of publishing with an old token.
 
 1. **First publish by hand.** npm's docs only describe adding a trusted publisher on an existing package's
    settings page, so each package has to exist before CI can publish it. On a machine logged in to npm as a member of the
@@ -49,7 +52,7 @@ It runs only when asked:
 
 ```bash
 npm run version-packages   # applies .changeset/*.md: bumps versions, writes CHANGELOGs
-git commit -am "chore: release vX.Y.Z"
+git add -A && git commit -m "chore: release vX.Y.Z"   # -A also picks up new CHANGELOG.md files
 ```
 
 Merge that through a PR, then push the tag on the merge commit (`git tag vX.Y.Z && git push origin vX.Y.Z`)

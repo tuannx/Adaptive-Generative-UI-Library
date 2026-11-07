@@ -39,14 +39,16 @@ jobs:
 
       - run: npm ci
 
-      - name: Tag matches the package version
+      # The packages are linked, not fixed: a release may bump only some of them, so the tag has to
+      # match the version of at least one package.
+      - name: Tag matches a package version
         if: github.ref_type == 'tag'
         run: |
-          version="v$(node -p "require('./packages/core/package.json').version")"
-          if [ "$version" != "$GITHUB_REF_NAME" ]; then
-            echo "Tag $GITHUB_REF_NAME does not match packages/core version $version"
-            exit 1
-          fi
+          versions="$(node -p "['core','react','mcp'].map(p => 'v' + require('./packages/' + p + '/package.json').version).join(' ')")"
+          case " $versions " in
+            *" $GITHUB_REF_NAME "*) ;;
+            *) echo "Tag $GITHUB_REF_NAME matches none of the package versions: $versions"; exit 1 ;;
+          esac
 
       - run: npm run build
       - run: npm run test
