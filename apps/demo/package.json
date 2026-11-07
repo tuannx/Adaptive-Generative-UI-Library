@@ -1,16 +1,16 @@
 {
   "name": "@agul/demo",
-  "private": true,
   "version": "0.1.0",
+  "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
+    "dev": "vp dev",
+    "build": "vp build",
+    "preview": "vp preview",
     "typecheck": "tsc --noEmit && wrangler types worker/worker-configuration.d.ts --check && tsc --noEmit -p worker",
-    "lint": "eslint src",
-    "build:cloudflare": "vite build --mode cloudflare",
-    "test": "vitest run",
+    "lint": "vp lint src",
+    "build:cloudflare": "vp build --mode cloudflare",
+    "test": "vp test run",
     "cf:dev": "npm run build:cloudflare && wrangler dev",
     "deploy": "npm run build:cloudflare && wrangler deploy",
     "cf:types": "wrangler types worker/worker-configuration.d.ts"
@@ -33,8 +33,8 @@
     "@types/react-dom": "^19.2.2",
     "@vitejs/plugin-react": "^5.1.0",
     "typescript": "^7.0.2",
-    "vite": "^7.2.2",
-    "vitest": "^4.1.12",
+    "vite": "npm:@voidzero-dev/vite-plus-core@1.5.0",
+    "vite-plus": "1.5.0",
     "wrangler": "^4.154.0"
   }
 }

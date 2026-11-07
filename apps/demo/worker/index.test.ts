@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
 import worker from './index.js';
 import { isHostAllowed, type Env } from './proxy.js';
 

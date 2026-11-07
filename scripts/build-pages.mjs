@@ -14,7 +14,7 @@ const out = path.join(root, 'pages-dist');
 const base = process.env.PAGES_BASE ?? '/Adaptive-Generative-UI-Library/';
 const demoBase = `${base.replace(/\/?$/, '/')}demo/`;
 const demoDir = path.join(root, 'apps/demo');
-const vite = path.join(root, 'node_modules/.bin/vite');
+const vite = path.join(root, 'node_modules/.bin/vp');
 
 rmSync(out, { recursive: true, force: true });
 mkdirSync(out, { recursive: true });

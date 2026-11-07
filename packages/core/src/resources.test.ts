@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { parseOpenAPISync } from './parser.js';
 import { buildResources, buildMenu } from './resources.js';
 import { dereferenceSchema, MAX_REF_DEPTH } from './schema.js';

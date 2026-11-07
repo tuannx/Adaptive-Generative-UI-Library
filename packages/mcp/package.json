@@ -19,11 +19,11 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup && tsc -p tsconfig.build.json",
-    "dev": "tsup --watch",
+    "build": "vp pack && tsc -p tsconfig.build.json",
+    "dev": "vp pack --watch",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "test:watch": "vitest",
+    "test": "vp test run",
+    "test:watch": "vp test",
     "start": "node dist/cli.js"
   },
   "dependencies": {
@@ -33,9 +33,8 @@
   },
   "devDependencies": {
     "@types/node": "^24.10.0",
-    "tsup": "^8.5.0",
     "typescript": "^7.0.2",
-    "vitest": "^4.1.12"
+    "vite-plus": "1.5.0"
   },
   "license": "MIT",
   "repository": {
