@@ -1,5 +1,5 @@
 import { Space, Tag, Timeline, Typography } from 'antd';
-import { formatDisplayValue, resolveDisplay, statusTone, type PresentPlan } from '@agul/core';
+import { formatDisplayValue, resolveDisplay, statusTone, type PresentPlan } from '@aikitstudio/agul-core';
 import { toneColor } from './tone.js';
 
 type Row = Record<string, unknown>;

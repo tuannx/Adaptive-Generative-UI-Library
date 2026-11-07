@@ -10,11 +10,11 @@ Transform AGUL from OpenAPI demo into a **publishable library** that AI agents u
 
 ```
 packages/
-  core/     @agul/core   — parser, generator, types (no React)
-  react/    @agul/react  — AGULRenderer, ListView, DetailView, FormView
-  mcp/      @agul/mcp    — MCP server for agents
+  core/     @aikitstudio/agul-core   — parser, generator, types (no React)
+  react/    @aikitstudio/agul-react  — AGULRenderer, ListView, DetailView, FormView
+  mcp/      @aikitstudio/agul-mcp    — MCP server for agents
 apps/
-  demo/     @agul/demo   — Vite demo app (dogfood target)
+  demo/     @aikitstudio/agul-demo   — Vite demo app (dogfood target)
 ```
 
 ## Dev Commands (fast path)
@@ -42,7 +42,7 @@ npm run swarm:next   # pick next unassigned swarm task
 ### Ship-Validate Cycle (2-iter)
 
 - **Iter N (ship)**: land pattern/infrastructure (e.g. library packaging)
-- **Iter N+1 (validate)**: apply pattern once (e.g. fresh app imports @agul/react)
+- **Iter N+1 (validate)**: apply pattern once (e.g. fresh app imports @aikitstudio/agul-react)
 
 Never ship pattern N+1 until pattern N has one validation.
 
@@ -61,7 +61,7 @@ See `.planning/SWARM_ROADMAP.md` for full backlog.
 ## Public API (do not break without issue)
 
 ```tsx
-import { AGULRenderer, createAGULFromSpec } from '@agul/react';
+import { AGULRenderer, createAGULFromSpec } from '@aikitstudio/agul-react';
 
 <AGULRenderer spec={openApiJson} baseUrl="https://api.example.com" />
 // sign-in from securitySchemes + role/scope gating (docs/auth.md)
@@ -72,7 +72,7 @@ import { AGULRenderer, createAGULFromSpec } from '@agul/react';
 
 ```bash
 # Add to MCP config (stdio):
-# { "command": "npx", "args": ["-y", "@agul/mcp"] }
+# { "command": "npx", "args": ["-y", "@aikitstudio/agul-mcp"] }
 
 # Or from monorepo after build:
 node packages/mcp/dist/cli.js
@@ -94,7 +94,7 @@ See `docs/ui-decisions.md` for the decision layers.
 Programmatic (tests):
 
 ```ts
-import { generateUIFromOpenAPI } from '@agul/mcp';
+import { generateUIFromOpenAPI } from '@aikitstudio/agul-mcp';
 const config = await generateUIFromOpenAPI(spec);
 ```
 
@@ -102,7 +102,7 @@ const config = await generateUIFromOpenAPI(spec);
 
 - TypeScript 7 strict, `verbatimModuleSyntax`
 - Packages use `.js` extensions in imports
-- `@agul/core` has zero React dependency
+- `@aikitstudio/agul-core` has zero React dependency
 - Presentation (crud/action/chat/hidden) is decided in `packages/core/src/decisions.ts` (`planUi`); views never classify endpoints themselves
 - CRUD wiring lives in `buildResources` (`packages/core/src/resources.ts`); views receive a `Resource`, never re-derive relations from paths
 - Access control is decided in `planUi(api, decisions, { grants })` (`packages/core/src/security.ts`); views only check whether an operation is present

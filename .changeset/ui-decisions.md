@@ -1,7 +1,7 @@
 ---
-"@agul/core": minor
-"@agul/react": minor
-"@agul/mcp": minor
+"@aikitstudio/agul-core": minor
+"@aikitstudio/agul-react": minor
+"@aikitstudio/agul-mcp": minor
 ---
 
 Every operation now gets a page: CRUD, **action** (form → result or live stream) or **chat** (conversation UI with SSE/NDJSON streaming), or is hidden.

@@ -1,5 +1,5 @@
 import { Card, Col, Row, Space, Tag, Typography } from 'antd';
-import { formatDisplayValue, statusTone, type PresentPlan } from '@agul/core';
+import { formatDisplayValue, statusTone, type PresentPlan } from '@aikitstudio/agul-core';
 import { formatLabel } from '../format.js';
 import { toneColor } from './tone.js';
 

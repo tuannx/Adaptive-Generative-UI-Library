@@ -1,4 +1,4 @@
-import type { DisplayTone } from '@agul/core';
+import type { DisplayTone } from '@aikitstudio/agul-core';
 
 /** antd preset colours follow the theme tokens, so no hex values here. */
 export function toneColor(tone: DisplayTone): string {

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vite-plus/test';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { planRecord, planRows } from '@agul/core';
+import { planRecord, planRows } from '@aikitstudio/agul-core';
 import { ResultView } from '../ResultView.js';
 import { renderValue } from '../values.js';
 import { CardGrid } from './CardGrid.js';

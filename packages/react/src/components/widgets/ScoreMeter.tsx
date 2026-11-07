@@ -1,5 +1,5 @@
 import { Progress, Tag } from 'antd';
-import { readScore, type AgulScoreBand, type SchemaObject } from '@agul/core';
+import { readScore, type AgulScoreBand, type SchemaObject } from '@aikitstudio/agul-core';
 
 const TAG_COLOR: Record<NonNullable<AgulScoreBand['tone']>, string> = {
   positive: 'success',

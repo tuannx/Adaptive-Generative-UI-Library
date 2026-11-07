@@ -1,10 +1,10 @@
-# @agul/mcp
+# @aikitstudio/agul-mcp
 
 MCP server that lets coding agents turn an OpenAPI spec into an admin UI with
 [AGUL](https://tuannx.github.io/Adaptive-Generative-UI-Library/).
 
 ```json
-{ "mcpServers": { "agul": { "command": "npx", "args": ["-y", "@agul/mcp"] } } }
+{ "mcpServers": { "agul": { "command": "npx", "args": ["-y", "@aikitstudio/agul-mcp"] } } }
 ```
 
 Tool **`generate_ui_from_openapi`** — `spec` (OpenAPI 3 / Swagger 2 JSON), optional `baseUrl`, `previewBaseUrl`,
@@ -13,7 +13,7 @@ React embed snippet. The calling agent can act as the layout decider: request th
 `decisions: [{ operationId, kind: 'crud' | 'action' | 'chat' | 'hidden', label?, group? }]`.
 
 ```ts
-import { generateUIFromOpenAPI } from '@agul/mcp';
+import { generateUIFromOpenAPI } from '@aikitstudio/agul-mcp';
 const ui = await generateUIFromOpenAPI(spec);
 ```
 

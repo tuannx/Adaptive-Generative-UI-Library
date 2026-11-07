@@ -67,10 +67,10 @@ buttons disappear; a resource with nothing left is dropped. Visiting a hidden pa
 This is UI gating only — tokens are decoded, not verified. **The API must still enforce every rule**; AGUL shows
 its 403 messages when it does.
 
-Programmatic use (`@agul/core`):
+Programmatic use (`@aikitstudio/agul-core`):
 
 ```ts
-import { planUi, grantsFromClaims, decodeJwt, canAccessEndpoint } from '@agul/core';
+import { planUi, grantsFromClaims, decodeJwt, canAccessEndpoint } from '@aikitstudio/agul-core';
 
 const grants = grantsFromClaims(decodeJwt(accessToken));
 const plan = planUi(api, undefined, { grants });

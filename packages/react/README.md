@@ -1,4 +1,4 @@
-# @agul/react
+# @aikitstudio/agul-react
 
 OpenAPI / Swagger spec in, React admin UI out: CRUD pages for every resource, forms for actions, streaming chat
 for AI endpoints, and sign-in plus role-based access from the spec's `securitySchemes`.
@@ -6,11 +6,11 @@ for AI endpoints, and sign-in plus role-based access from the spec's `securitySc
 **[Live demo](https://tuannx.github.io/Adaptive-Generative-UI-Library/demo/)** · [Docs](https://github.com/tuannx/Adaptive-Generative-UI-Library#readme)
 
 ```bash
-npm install @agul/react react react-dom antd @ant-design/icons axios dayjs swr react-router-dom
+npm install @aikitstudio/agul-react react react-dom antd @ant-design/icons axios dayjs swr react-router-dom
 ```
 
 ```tsx
-import { AGULRenderer } from '@agul/react';
+import { AGULRenderer } from '@aikitstudio/agul-react';
 
 export default function Admin() {
   return <AGULRenderer specUrl="/openapi.json" auth={{ oauth: { clientId: 'admin-ui' } }} />;
@@ -33,15 +33,15 @@ export default function Admin() {
 
 ### Headless flows
 
-`@agul/react/headless` runs a server-driven flow (`x-agul-view: flow`) with no antd, for a page that draws with its
+`@aikitstudio/agul-react/headless` runs a server-driven flow (`x-agul-view: flow`) with no antd, for a page that draws with its
 own components. It needs only `react`; the antd peers above are optional and are not installed for it.
 
 ```bash
-npm install @agul/react @agul/core react react-dom
+npm install @aikitstudio/agul-react @aikitstudio/agul-core react react-dom
 ```
 
 ```tsx
-import { useAgulFlow } from '@agul/react/headless';
+import { useAgulFlow } from '@aikitstudio/agul-react/headless';
 
 const flow = useAgulFlow({ startUrl: '/consult/sessions', answerUrl: (id) => `/consult/sessions/${id}/answers`, stepPath: 'flow' });
 ```

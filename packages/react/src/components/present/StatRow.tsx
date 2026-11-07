@@ -1,5 +1,5 @@
 import { Card, Col, Row, Statistic } from 'antd';
-import { formatDisplayValue, type PresentField } from '@agul/core';
+import { formatDisplayValue, type PresentField } from '@aikitstudio/agul-core';
 import { formatLabel } from '../format.js';
 
 /** KPI cards for the numeric fields of one record. */

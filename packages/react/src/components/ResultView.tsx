@@ -1,5 +1,5 @@
 import { Descriptions, Table, Typography } from 'antd';
-import { planRecord, planRows } from '@agul/core';
+import { planRecord, planRows } from '@aikitstudio/agul-core';
 import { formatCellValue, formatLabel, unwrapList } from './format.js';
 import { renderValue } from './values.js';
 import { CardGrid } from './present/CardGrid.js';

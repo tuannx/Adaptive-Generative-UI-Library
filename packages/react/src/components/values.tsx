@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tag, Typography } from 'antd';
-import { formatDisplayValue, resolveDisplay, statusTone, type SchemaObject } from '@agul/core';
+import { formatDisplayValue, resolveDisplay, statusTone, type SchemaObject } from '@aikitstudio/agul-core';
 import { toneColor } from './present/tone.js';
 
 export interface RenderValueOptions {

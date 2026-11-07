@@ -1,5 +1,5 @@
 {
-  "name": "@agul/validate-consumer",
+  "name": "@aikitstudio/agul-validate-consumer",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -8,7 +8,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@agul/react": "0.1.0",
+    "@aikitstudio/agul-react": "0.1.0",
     "@ant-design/icons": "^6.3.4",
     "antd": "^6.7.0",
     "axios": "^1.13.2",

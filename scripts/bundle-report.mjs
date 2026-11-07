@@ -1,4 +1,4 @@
-// Measures what @agul/* adds to a host app's client bundle (e.g. a Next.js page).
+// Measures what @aikitstudio/agul-* adds to a host app's client bundle (e.g. a Next.js page).
 // React and react-dom are external because the host already ships them.
 // Run after `npm run build`: node scripts/bundle-report.mjs [--json]
 import { build } from 'esbuild';
@@ -8,9 +8,9 @@ import { resolve } from 'node:path';
 const root = resolve(import.meta.dirname, '..');
 
 const scenarios = [
-  { id: 'core', label: '@agul/core (parse + plan, no React)', code: "export { parseOpenAPI, planUi } from '@agul/core';" },
-  { id: 'headless', label: '@agul/react/headless useAgulFlow (no antd)', code: "export { useAgulFlow } from '@agul/react/headless';" },
-  { id: 'renderer', label: '@agul/react AGULRenderer (antd included)', code: "export { AGULRenderer } from '@agul/react';" },
+  { id: 'core', label: '@aikitstudio/agul-core (parse + plan, no React)', code: "export { parseOpenAPI, planUi } from '@aikitstudio/agul-core';" },
+  { id: 'headless', label: '@aikitstudio/agul-react/headless useAgulFlow (no antd)', code: "export { useAgulFlow } from '@aikitstudio/agul-react/headless';" },
+  { id: 'renderer', label: '@aikitstudio/agul-react AGULRenderer (antd included)', code: "export { AGULRenderer } from '@aikitstudio/agul-react';" },
   { id: 'antd-form', label: 'antd Form + Input baseline', code: "export { Form, Input, Button } from 'antd';" },
 ];
 

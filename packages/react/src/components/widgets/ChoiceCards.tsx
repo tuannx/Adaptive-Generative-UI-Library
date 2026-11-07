@@ -1,5 +1,5 @@
 import { theme } from 'antd';
-import type { AgulChoice } from '@agul/core';
+import type { AgulChoice } from '@aikitstudio/agul-core';
 
 type ChoiceValue = string | number;
 
