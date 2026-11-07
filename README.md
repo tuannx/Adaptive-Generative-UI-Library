@@ -88,6 +88,19 @@ The Cloudflare Worker includes a `/decide` route backed by Claude (`wrangler sec
 Details, provider API and limits: [docs/ui-decisions.md](./docs/ui-decisions.md). Click **Tarot Chat** in the
 demo for a worked example (CRUD + actions + streaming chat).
 
+### Presenting data
+
+Read-only values are formatted from the schema: money, percent, numbers, dates, emails, links, images, and
+status values as coloured tags (`format`, then the field name, then the value). Pin a field with
+`x-agul-display: currency | percent | number | date | datetime | status | email | url | image | tags | text`
+(or `{ kind: currency, currency: EUR }`).
+
+Data also gets a presentation, not only a table: a record with several numbers shows KPI cards on top, rows
+with a title and an image can switch to a card grid, dated rows to a timeline. Lists keep the table by default
+and offer the other view; set `x-agul-present: cards | timeline | table` on the item schema (or `stats | record`
+on a record schema) to pick it. The planner is pure (`planPresentation` in `@agul/core`), so headless hosts
+draw the same thing.
+
 ### Sign-in and permissions
 
 AGUL signs users in with whatever the spec's `securitySchemes` declare — API key, Basic, Bearer, OAuth 2

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Table, Button, Space, Popconfirm, Card, Input, Select, Alert, Empty, Tooltip, type TableColumnsType, App } from 'antd';
+import { Table, Button, Space, Popconfirm, Card, Input, Select, Alert, Empty, Tooltip, Pagination, Segmented, type TableColumnsType, App } from 'antd';
 import { EyeOutlined, EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined, ReloadOutlined } from '@ant-design/icons';
 import { useParams } from 'react-router-dom';
 import useSWR from 'swr';
@@ -11,6 +11,7 @@ import {
   getDefaultListQueryState,
   isPrimitiveSchema,
   parseListQueryBindings,
+  planRows,
   resolveRecordIdField,
   withFallbackPagination,
   type ListQueryParamBinding,
@@ -19,9 +20,13 @@ import {
 } from '@agul/core';
 import { useAgulNavigate, useAgulRuntime, useRevalidateList } from '../runtime.js';
 import { describeApiError } from '../http/errors.js';
-import { formatCellValue, formatLabel, unwrapList } from './format.js';
+import { formatLabel, unwrapList } from './format.js';
+import { renderValue } from './values.js';
+import { CardGrid } from './present/CardGrid.js';
+import { TimelineView } from './present/TimelineView.js';
 
 type Row = Record<string, unknown>;
+type ListMode = 'table' | 'cards' | 'timeline';
 
 interface ListViewProps {
   resource: Resource;
@@ -205,7 +210,7 @@ export const ListView: React.FC<ListViewProps> = ({ resource }) => {
       key,
       ellipsis: true,
       sorter: (a: Row, b: Row) => compareValues(a[key], b[key]),
-      render: (value: unknown) => formatCellValue(value),
+      render: (value: unknown) => renderValue(value, key, properties?.[key], { compact: true }),
     }));
 
     const { paths, remove } = resource;
@@ -268,6 +273,25 @@ export const ListView: React.FC<ListViewProps> = ({ resource }) => {
     ];
   }, [resource, rows, goToRecord, handleDelete]);
 
+  // Cards / timeline are offered when the rows suit them; the table stays the default unless the
+  // schema pins a view with `x-agul-present`.
+  const rowPlan = React.useMemo(() => planRows(rows, resource.recordSchema), [rows, resource.recordSchema]);
+  const offeredMode = rowPlan.kind === 'cards' || rowPlan.kind === 'timeline' ? rowPlan.kind : undefined;
+  const [chosenMode, setChosenMode] = React.useState<ListMode | undefined>(undefined);
+  const pinnedMode = resource.recordSchema?.['x-agul-present'] === offeredMode ? offeredMode : undefined;
+  const mode: ListMode = offeredMode ? chosenMode ?? pinnedMode ?? 'table' : 'table';
+  const openDetail = resource.paths.detail ? (record: Row) => goToRecord(resource.paths.detail, record) : undefined;
+
+  const pagination = {
+    current: queryState.page,
+    pageSize: queryState.pageSize,
+    total,
+    showSizeChanger: true,
+    showTotal: (count: number) => `Total ${count} items`,
+    onChange: (page: number, pageSize?: number) =>
+      setQueryState((current) => ({ ...current, page, pageSize: pageSize ?? current.pageSize })),
+  };
+
   const updateQueryState = (patch: Partial<ListQueryState>) => {
     setQueryState((current) => ({ ...current, page: 1, ...patch }));
   };
@@ -302,6 +326,17 @@ export const ListView: React.FC<ListViewProps> = ({ resource }) => {
         <Tooltip title="Refresh">
           <Button icon={<ReloadOutlined spin={isValidating && !isLoading} />} onClick={() => mutate()} data-testid="agul-list-refresh" />
         </Tooltip>
+        {offeredMode && (
+          <Segmented<ListMode>
+            data-testid="agul-list-mode"
+            value={mode}
+            onChange={setChosenMode}
+            options={[
+              { label: 'Table', value: 'table' },
+              { label: offeredMode === 'cards' ? 'Cards' : 'Timeline', value: offeredMode },
+            ]}
+          />
+        )}
         {resource.remove && selectedKeys.length > 0 && (
           <Popconfirm
             title={`Delete ${selectedKeys.length} selected item${selectedKeys.length === 1 ? '' : 's'}?`}
@@ -330,7 +365,17 @@ export const ListView: React.FC<ListViewProps> = ({ resource }) => {
           }
         />
       )}
-      {(!error || data) && (
+      {(!error || data) && mode !== 'table' && (
+        <>
+          {mode === 'cards' ? (
+            <CardGrid rows={visibleRows} plan={rowPlan} onOpen={openDetail} rowKey={(row) => String(row.key)} />
+          ) : (
+            <TimelineView rows={visibleRows} plan={rowPlan} onOpen={openDetail} />
+          )}
+          <Pagination style={{ marginTop: 16, textAlign: 'right' }} {...pagination} />
+        </>
+      )}
+      {(!error || data) && mode === 'table' && (
         <Table
           data-testid="agul-list-table"
           columns={columns}
@@ -364,15 +409,7 @@ export const ListView: React.FC<ListViewProps> = ({ resource }) => {
               </Empty>
             ),
           }}
-          pagination={{
-            current: queryState.page,
-            pageSize: queryState.pageSize,
-            total,
-            showSizeChanger: true,
-            showTotal: (count) => `Total ${count} items`,
-            onChange: (page, pageSize) =>
-              setQueryState((current) => ({ ...current, page, pageSize: pageSize ?? current.pageSize })),
-          }}
+          pagination={pagination}
           scroll={{ x: 'max-content' }}
         />
       )}
