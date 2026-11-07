@@ -53,7 +53,7 @@ export const DetailView: React.FC<DetailViewProps> = ({ resource }) => {
       <Alert
         type="error"
         showIcon
-        message="Failed to load data"
+        title="Failed to load data"
         description={describeApiError(error).message}
         action={
           <Button size="small" onClick={() => mutate()}>
@@ -63,7 +63,7 @@ export const DetailView: React.FC<DetailViewProps> = ({ resource }) => {
       />
     );
   } else if (!record || typeof record !== 'object') {
-    body = <Alert type="warning" showIcon message="No data found for this resource" />;
+    body = <Alert type="warning" showIcon title="No data found for this resource" />;
   } else {
     const properties = resource.recordSchema?.properties;
     const { metrics } = planRecord(record, resource.recordSchema);
@@ -71,15 +71,17 @@ export const DetailView: React.FC<DetailViewProps> = ({ resource }) => {
     body = (
       <>
         <StatRow record={record} metrics={metrics} />
-        <Descriptions bordered column={1}>
-          {Object.entries(record)
+        <Descriptions
+          bordered
+          column={1}
+          items={Object.entries(record)
             .filter(([key]) => !inStats.has(key))
-            .map(([key, value]) => (
-              <Descriptions.Item key={key} label={formatLabel(key)}>
-                {renderValue(value, key, properties?.[key])}
-              </Descriptions.Item>
-            ))}
-        </Descriptions>
+            .map(([key, value]) => ({
+              key,
+              label: formatLabel(key),
+              children: renderValue(value, key, properties?.[key]),
+            }))}
+        />
       </>
     );
   }

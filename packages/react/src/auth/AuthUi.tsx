@@ -113,7 +113,7 @@ export function SignInPanel() {
           style={{ marginBottom: 16 }}
           type={auth.signIn.error ? 'error' : 'info'}
           showIcon
-          message={notice}
+          title={notice}
           data-testid="agul-signin-notice"
         />
       )}
@@ -152,12 +152,12 @@ function useSubmit() {
 function SchemeForm({ name, scheme }: { name: string; scheme: SecurityScheme }) {
   const auth = useAgulAuth()!;
   const { busy, error, run } = useSubmit();
-  const errorAlert = error && <Alert type="error" showIcon message={error} style={{ marginBottom: 12 }} data-testid="agul-signin-error" />;
+  const errorAlert = error && <Alert type="error" showIcon title={error} style={{ marginBottom: 12 }} data-testid="agul-signin-error" />;
   const description = scheme.description && <Typography.Paragraph type="secondary">{scheme.description}</Typography.Paragraph>;
 
   if (scheme.type === 'apiKey') {
     if (scheme.in === 'cookie') {
-      return <Alert type="info" showIcon message={`${name} uses the "${scheme.name}" cookie, which the API's own login sets.`} />;
+      return <Alert type="info" showIcon title={`${name} uses the "${scheme.name}" cookie, which the API's own login sets.`} />;
     }
     return (
       <Form layout="vertical" onFinish={({ value }) => auth.setCredential(name, { kind: 'apiKey', value: String(value).trim() })}>
@@ -263,7 +263,7 @@ function SchemeForm({ name, scheme }: { name: string; scheme: SecurityScheme }) 
     );
   }
 
-  return <Alert type="warning" showIcon message={`${name} (${scheme.type}) can't be used from a browser.`} />;
+  return <Alert type="warning" showIcon title={`${name} (${scheme.type}) can't be used from a browser.`} />;
 }
 
 function UsernamePassword() {

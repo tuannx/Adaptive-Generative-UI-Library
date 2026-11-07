@@ -356,7 +356,7 @@ export const ListView: React.FC<ListViewProps> = ({ resource }) => {
           style={{ marginBottom: 16 }}
           type="error"
           showIcon
-          message="Failed to load data"
+          title="Failed to load data"
           description={describeApiError(error).message}
           action={
             <Button size="small" onClick={() => mutate()}>

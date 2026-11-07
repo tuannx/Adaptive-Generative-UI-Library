@@ -187,7 +187,7 @@ export function ActionView({ page }: { page: OperationPage }) {
       </Form>
 
       {(result || streamed !== null || error) && <Divider />}
-      {error && <Alert type="error" showIcon message="Request failed" description={error} />}
+      {error && <Alert type="error" showIcon title="Request failed" description={error} />}
       {streamed !== null && (
         <Typography.Paragraph data-testid="agul-action-stream" style={{ whiteSpace: 'pre-wrap' }}>
           {streamed}

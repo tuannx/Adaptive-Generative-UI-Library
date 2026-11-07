@@ -50,13 +50,18 @@ function RecordView({ record }: { record: Row }) {
     <>
       <StatRow record={record} metrics={plan.metrics} />
       {rest.length > 0 && (
-        <Descriptions data-testid="agul-result-record" bordered column={1} size="small">
-          {rest.map(([key, field]) => (
-            <Descriptions.Item key={key} label={formatLabel(key)}>
-              {Array.isArray(field) && field.length > 0 && field.every(isRow) ? <ResultView value={field} /> : renderValue(field, key)}
-            </Descriptions.Item>
-          ))}
-        </Descriptions>
+        <Descriptions
+          data-testid="agul-result-record"
+          bordered
+          column={1}
+          size="small"
+          items={rest.map(([key, field]) => ({
+            key,
+            label: formatLabel(key),
+            children:
+              Array.isArray(field) && field.length > 0 && field.every(isRow) ? <ResultView value={field} /> : renderValue(field, key),
+          }))}
+        />
       )}
     </>
   );

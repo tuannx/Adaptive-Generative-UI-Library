@@ -51,7 +51,10 @@ export function ChatView({ page }: { page: OperationPage }) {
   const extra = React.useMemo(() => settingsSchema(page), [page]);
 
   React.useEffect(() => () => abortRef.current?.abort(), []);
-  React.useEffect(() => bottomRef.current?.scrollIntoView?.({ block: 'end' }), [messages]);
+  React.useEffect(() => {
+    // Newer Chromium returns a Promise from scrollIntoView; returning it would make React call it as a cleanup.
+    bottomRef.current?.scrollIntoView?.({ block: 'end' });
+  }, [messages]);
 
   const appendToLast = (text: string) =>
     setMessages((current) => {
@@ -206,7 +209,7 @@ export function ChatView({ page }: { page: OperationPage }) {
         <div ref={bottomRef} />
       </div>
 
-      {error && <Alert type="warning" showIcon message={error} closable onClose={() => setError(null)} />}
+      {error && <Alert type="warning" showIcon title={error} closable={{ onClose: () => setError(null) }} />}
 
       <Space.Compact style={{ width: '100%' }}>
         <Input.TextArea

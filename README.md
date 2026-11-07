@@ -186,8 +186,8 @@ Phases: `phase:0-infra` → `phase:1-library` → `phase:2-agent-api` → `phase
 
 ## Tech Stack
 
-- TypeScript 7, Turbo, Vitest, Playwright
-- React 19, Ant Design 5, Vite 7
+- TypeScript 7, Turbo, Vite+ (Vite 8, Vitest 5, Oxlint), Playwright
+- React 19, Ant Design 6
 - OpenAPI 3.0 / Swagger 2.0
 
 ## License
