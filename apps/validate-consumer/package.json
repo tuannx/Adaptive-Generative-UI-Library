@@ -8,7 +8,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@agul/react": "0.1.0",
+    "@agul/react": "0.2.0",
     "@ant-design/icons": "^6.3.4",
     "antd": "^6.7.0",
     "axios": "^1.13.2",

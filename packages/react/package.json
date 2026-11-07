@@ -1,6 +1,6 @@
 {
   "name": "@agul/react",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "React components and AGULRenderer for OpenAPI-driven dynamic UI",
   "license": "MIT",
   "type": "module",
@@ -76,7 +76,7 @@
     }
   },
   "dependencies": {
-    "@agul/core": "0.1.0",
+    "@agul/core": "0.2.0",
     "js-yaml": "^5.5.0"
   },
   "devDependencies": {

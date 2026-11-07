@@ -1,6 +1,6 @@
 {
   "name": "@agul/core",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "OpenAPI parser and route generator for AGUL",
   "license": "MIT",
   "type": "module",

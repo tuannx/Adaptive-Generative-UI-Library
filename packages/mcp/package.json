@@ -1,6 +1,6 @@
 {
   "name": "@agul/mcp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "MCP server exposing AGUL OpenAPI-to-UI tools for AI agents",
   "type": "module",
   "main": "./dist/index.js",
@@ -27,7 +27,7 @@
     "start": "node dist/cli.js"
   },
   "dependencies": {
-    "@agul/core": "0.1.0",
+    "@agul/core": "0.2.0",
     "@modelcontextprotocol/sdk": "^1.25.3",
     "zod": "^4.6.7"
   },
