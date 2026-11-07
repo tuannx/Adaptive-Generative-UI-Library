@@ -18,7 +18,7 @@
     "lint": "turbo typecheck",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "turbo build --filter=@agul/core --filter=@agul/react --filter=@agul/mcp && changeset publish",
+    "release": "npm run build && node scripts/publish-packages.mjs",
     "verify-pack": "node scripts/verify-pack.mjs",
     "bundle-report": "node scripts/bundle-report.mjs",
     "swarm:status": "node scripts/swarm-status.mjs",

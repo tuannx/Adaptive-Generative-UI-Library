@@ -1,0 +1,57 @@
+# Copy to .github/workflows/publish.yml and delete .github/workflows/release.yml (it runs on every push).
+name: Publish
+
+# Runs only when asked: push a tag like v0.2.0, or start it from the Actions tab.
+# npm authenticates with trusted publishing (OIDC), so there is no NPM_TOKEN.
+# The workflow filename (publish.yml) must match the trusted publisher set on npmjs.com.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Pack and check only, do not publish'
+        type: boolean
+        default: true
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write # required for npm trusted publishing
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+
+      # Trusted publishing needs npm 11.5.1 or later.
+      - run: npm install -g npm@11
+
+      - run: npm ci
+
+      - name: Tag matches the package version
+        if: github.ref_type == 'tag'
+        run: |
+          version="v$(node -p "require('./packages/core/package.json').version")"
+          if [ "$version" != "$GITHUB_REF_NAME" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match packages/core version $version"
+            exit 1
+          fi
+
+      - run: npm run build
+      - run: npm run test
+      - run: npm run typecheck
+      - run: npm run verify-pack
+
+      - name: Publish core, react, mcp
+        run: node scripts/publish-packages.mjs ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) && '--dry-run' || '' }}
