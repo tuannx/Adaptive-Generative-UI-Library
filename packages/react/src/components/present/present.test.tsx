@@ -44,6 +44,22 @@ describe('presentation blocks', () => {
     expect(out.indexOf('Newer ticket')).toBeLessThan(out.indexOf('Older ticket'));
   });
 
+  it('TimelineView puts rows without a date last and formats the date from the schema', () => {
+    const events = [
+      { title: 'January', occurred: '2026-01-05T10:00:00Z' },
+      { title: 'No date' },
+      { title: 'March', occurred: '2026-03-05T10:00:00Z' },
+    ];
+    const schema = {
+      type: 'object' as const,
+      properties: { title: { type: 'string' as const }, occurred: { type: 'string' as const, format: 'date-time' } },
+    };
+    const out = html(<TimelineView rows={events} plan={planRows(events, schema)} />);
+    expect(out.indexOf('March')).toBeLessThan(out.indexOf('January'));
+    expect(out.indexOf('January')).toBeLessThan(out.indexOf('No date'));
+    expect(out).not.toContain('2026-03-05T10:00:00Z');
+  });
+
   it('StatRow renders one KPI card per metric', () => {
     const record = { revenue: 1200, orders: 34, region: 'US' };
     const out = html(<StatRow record={record} metrics={planRecord(record).metrics} />);

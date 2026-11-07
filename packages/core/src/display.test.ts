@@ -34,6 +34,12 @@ describe('resolveDisplay', () => {
     });
   });
 
+  it('shows arrays as tags only when the items are plain values', () => {
+    expect(resolveDisplay('labels', { type: 'array', items: { type: 'string' } })).toEqual({ kind: 'tags' });
+    expect(resolveDisplay('lines', { type: 'array', items: { properties: { sku: { type: 'string' } } } })).toEqual({ kind: 'json' });
+    expect(resolveDisplay('lines', { type: 'array', items: { oneOf: [] } }, ['a'])).toEqual({ kind: 'tags' });
+  });
+
   it('ignores an unknown x-agul-display value', () => {
     expect(resolveDisplay('count', { type: 'integer', 'x-agul-display': 'sparkle' })).toEqual({ kind: 'number' });
   });
@@ -76,7 +82,10 @@ describe('formatDisplayValue', () => {
     expect(formatDisplayValue(0.425, { kind: 'percent', scale: 'fraction' }, { locale })).toBe('42.5%');
     expect(formatDisplayValue(42, { kind: 'percent' }, { locale })).toBe('42%');
     expect(formatDisplayValue(1, { kind: 'percent' }, { locale })).toBe('1%');
-    expect(formatDisplayValue(1234567, { kind: 'number' }, { locale })).toBe('1,234,567');
+    expect(formatDisplayValue(2024, { kind: 'number' }, { locale })).toBe('2024');
+    expect(formatDisplayValue(5551234567, { kind: 'number' }, { locale })).toBe('5551234567');
+    expect(formatDisplayValue(37.774929, { kind: 'number' }, { locale })).toBe('37.774929');
+    expect(formatDisplayValue(99, { kind: 'currency', currency: 'US$' }, { locale })).toBe('99.00');
   });
 
   it('formats dates without shifting a plain date across time zones', () => {
@@ -89,6 +98,7 @@ describe('formatDisplayValue', () => {
     expect(formatDisplayValue(null, { kind: 'currency' }, { locale })).toBe('-');
     expect(formatDisplayValue(true, { kind: 'boolean' })).toBe('Yes');
     expect(formatDisplayValue(['a', 'b'], { kind: 'tags' })).toBe('a, b');
+    expect(formatDisplayValue([{ a: 1 }], { kind: 'tags' })).toBe('{"a":1}');
     expect(formatDisplayValue({ a: 1 }, { kind: 'json' })).toBe('{"a":1}');
   });
 });

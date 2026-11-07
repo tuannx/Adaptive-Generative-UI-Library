@@ -11,7 +11,11 @@ export function StatRow({ record, metrics }: { record: Record<string, unknown>; 
       {metrics.map(({ key, display }) => (
         <Col key={key} xs={24} sm={12} lg={span}>
           <Card size="small" data-testid={`agul-stat-${key}`}>
-            <Statistic title={formatLabel(key)} value={formatDisplayValue(record[key], display)} />
+            {/* antd groups plain numbers itself (12,450), which suits a KPI but not a table cell. */}
+            <Statistic
+              title={formatLabel(key)}
+              value={display.kind === 'number' && typeof record[key] === 'number' ? record[key] : formatDisplayValue(record[key], display)}
+            />
           </Card>
         </Col>
       ))}

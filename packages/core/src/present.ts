@@ -24,6 +24,8 @@ export interface PresentPlan {
   subtitle?: string;
   image?: string;
   date?: string;
+  /** How to show the `date` field, from its schema. */
+  dateDisplay?: DisplayHint;
   status?: string;
   /** Other short fields worth a line on a card or timeline item. */
   extra: PresentField[];
@@ -83,13 +85,14 @@ export function planRows(rows: Row[], schema?: SchemaObject): PresentPlan {
   const title = pickNamed(fields, TITLE_NAMES);
   const subtitle = pickNamed(fields, SUBTITLE_NAMES, ['text', 'email']);
   const image = fields.find((field) => field.display.kind === 'image')?.key;
-  const date = fields.find((field) => field.display.kind === 'date' || field.display.kind === 'datetime')?.key;
+  const dateField = fields.find((field) => field.display.kind === 'date' || field.display.kind === 'datetime');
+  const date = dateField?.key;
   const status = fields.find((field) => field.display.kind === 'status')?.key;
   const used = new Set([title, subtitle, image, date, status]);
   const extra = fields
     .filter((field) => !used.has(field.key) && !ID_NAME.test(field.key) && field.display.kind !== 'json')
     .slice(0, MAX_EXTRA);
-  const base = { metrics: [], title, subtitle, image, date, status, extra };
+  const base = { metrics: [], title, subtitle, image, date, dateDisplay: dateField?.display, status, extra };
 
   const pinned = readPinned(schema);
   if (pinned === 'cards' || pinned === 'timeline' || pinned === 'table') return { kind: pinned, ...base };

@@ -15,10 +15,15 @@ interface TimelineViewProps {
 /** Dated rows as a vertical timeline, newest first. */
 export function TimelineView({ rows, plan, onOpen }: TimelineViewProps) {
   const dateKey = plan.date;
-  const dateHint = dateKey ? resolveDisplay(dateKey, undefined, rows.find((row) => row[dateKey])?.[dateKey]) : undefined;
-  const sorted = dateKey
-    ? [...rows].sort((a, b) => Date.parse(String(b[dateKey] ?? '')) - Date.parse(String(a[dateKey] ?? '')))
-    : rows;
+  const dateHint = dateKey
+    ? plan.dateDisplay ?? resolveDisplay(dateKey, undefined, rows.find((row) => row[dateKey])?.[dateKey])
+    : undefined;
+  // Newest first; rows without a readable date go last instead of breaking the order.
+  const time = (row: Row): number => {
+    const parsed = Date.parse(String(row[dateKey ?? ''] ?? ''));
+    return Number.isNaN(parsed) ? -Infinity : parsed;
+  };
+  const sorted = dateKey ? [...rows].sort((a, b) => (time(a) === time(b) ? 0 : time(b) > time(a) ? 1 : -1)) : rows;
 
   return (
     <Timeline

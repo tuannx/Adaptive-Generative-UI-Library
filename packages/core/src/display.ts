@@ -52,6 +52,7 @@ const IMAGE_EXT = /\.(jpe?g|png|gif|bmp|svg|webp|avif)(\?.*)?$/i;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const isDateName = (name: string): boolean => DATE_NAME.test(name) || AT_NAME.test(name);
+const isPrimitiveType = (type: unknown): boolean => type === 'string' || type === 'number' || type === 'integer' || type === 'boolean';
 
 function readExtension(schema: SchemaObject | undefined): DisplayHint | undefined {
   const raw = schema?.['x-agul-display'];
@@ -126,7 +127,7 @@ function resolveKind(name: string, schema: SchemaObject | undefined, value: unkn
   if (numeric) return { kind: 'number' };
 
   if (schema?.type === 'boolean') return { kind: 'boolean' };
-  if (schema?.type === 'array') return { kind: schema.items?.type === 'object' ? 'json' : 'tags' };
+  if (schema?.type === 'array') return { kind: isPrimitiveType(schema.items?.type) || fromValue(value) === 'tags' ? 'tags' : 'json' };
   if (STATUS_NAME.test(name) && (schema?.enum || typeof value === 'string')) return { kind: 'status' };
 
   if (typeof value === 'string') {
@@ -173,7 +174,12 @@ export function formatDisplayValue(value: unknown, hint: DisplayHint, options: F
         if (!hint.currency) {
           return new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(number);
         }
-        return new Intl.NumberFormat(locale, { style: 'currency', currency: hint.currency }).format(number);
+        try {
+          return new Intl.NumberFormat(locale, { style: 'currency', currency: hint.currency }).format(number);
+        } catch {
+          // Not an ISO 4217 code (e.g. "US$"): show the number rather than break the whole view.
+          return new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(number);
+        }
       }
       break;
     case 'percent':
@@ -183,7 +189,8 @@ export function formatDisplayValue(value: unknown, hint: DisplayHint, options: F
       }
       break;
     case 'number':
-      if (Number.isFinite(number)) return new Intl.NumberFormat(locale).format(number);
+      // No grouping and no rounding: a plain number may be a year, a phone number or a coordinate.
+      if (Number.isFinite(number)) return new Intl.NumberFormat(locale, { useGrouping: false, maximumFractionDigits: 20 }).format(number);
       break;
     case 'date': {
       const date = toDate(value);
@@ -198,7 +205,7 @@ export function formatDisplayValue(value: unknown, hint: DisplayHint, options: F
     case 'boolean':
       return value === true || value === 'true' ? 'Yes' : value === false || value === 'false' ? 'No' : String(value);
     case 'tags':
-      if (Array.isArray(value)) return value.map(String).join(', ');
+      if (Array.isArray(value)) return value.map((item) => (typeof item === 'object' && item !== null ? JSON.stringify(item) : String(item))).join(', ');
       break;
     case 'json':
       return typeof value === 'object' ? JSON.stringify(value) : String(value);
