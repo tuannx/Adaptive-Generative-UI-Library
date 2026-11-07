@@ -229,7 +229,7 @@ function AGULApp({
   }
 
   if (state.status === 'error') {
-    return <Alert message="Error" description={state.error.message} type="error" showIcon style={{ margin: 24 }} />;
+    return <Alert title="Error" description={state.error.message} type="error" showIcon style={{ margin: 24 }} />;
   }
 
   if (authState.required) {
@@ -246,7 +246,7 @@ function AGULApp({
   if (!plan || (plan.resources.length === 0 && plan.pages.length === 0)) {
     return (
       <Alert
-        message="No Routes Found"
+        title="No Routes Found"
         description="No API endpoints found in the OpenAPI specification"
         type="warning"
         showIcon

@@ -206,7 +206,7 @@ export function ChatView({ page }: { page: OperationPage }) {
         <div ref={bottomRef} />
       </div>
 
-      {error && <Alert type="warning" showIcon message={error} closable onClose={() => setError(null)} />}
+      {error && <Alert type="warning" showIcon title={error} closable={{ onClose: () => setError(null) }} />}
 
       <Space.Compact style={{ width: '100%' }}>
         <Input.TextArea
