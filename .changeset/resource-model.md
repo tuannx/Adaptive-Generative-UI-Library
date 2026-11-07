@@ -1,7 +1,7 @@
 ---
-"@agul/core": minor
-"@agul/react": minor
-"@agul/mcp": minor
+"@ai-kit/agul-core": minor
+"@ai-kit/agul-react": minor
+"@ai-kit/agul-mcp": minor
 ---
 
 Introduce a resource model (`buildResources`, `buildMenu`, `dereferenceSchema`) as the single source of CRUD wiring.

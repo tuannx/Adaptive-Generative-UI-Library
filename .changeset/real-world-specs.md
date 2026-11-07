@@ -1,7 +1,7 @@
 ---
-"@agul/core": minor
-"@agul/react": minor
-"@agul/mcp": minor
+"@ai-kit/agul-core": minor
+"@ai-kit/agul-react": minor
+"@ai-kit/agul-mcp": minor
 ---
 
 Generalise beyond Petstore, measured on 19 public specs (full-CRUD resources 162 → 519, see docs/real-world-coverage.md).

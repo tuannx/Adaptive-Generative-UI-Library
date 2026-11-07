@@ -1,7 +1,7 @@
 import React from 'react';
 import { Alert, Button, Dropdown, Form, Input, Modal, Space, Tabs, Tag, Typography } from 'antd';
 import { LockOutlined, LoginOutlined, LogoutOutlined, UserOutlined } from '@ant-design/icons';
-import type { SecurityScheme } from '@agul/core';
+import type { SecurityScheme } from '@ai-kit/agul-core';
 import type { AgulAuthState } from './controller.js';
 import { requestToken } from './oauth.js';
 

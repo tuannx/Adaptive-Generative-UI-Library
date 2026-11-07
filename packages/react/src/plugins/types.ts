@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { SchemaObject } from '@agul/core';
+import type { SchemaObject } from '@ai-kit/agul-core';
 
 export interface AgulFieldRenderContext {
   name: string;

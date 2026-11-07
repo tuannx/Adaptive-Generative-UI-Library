@@ -42,7 +42,7 @@ describe('generateUIFromOpenAPI', () => {
     expect(result.menu.length).toBeGreaterThan(0);
     expect(result.routes.some((r) => r.component === 'list')).toBe(true);
     expect(result.embed.react).toContain('AGULRenderer');
-    expect(result.embed.install).toContain('@agul/react');
+    expect(result.embed.install).toContain('@ai-kit/agul-react');
   });
 
   it('includes preview URL when provided', async () => {

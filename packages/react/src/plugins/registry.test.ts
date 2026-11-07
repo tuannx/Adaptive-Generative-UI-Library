@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vite-plus/test';
 import { resolveFieldPlugin } from './registry.js';
 import { readWizardConfig } from './schema-extensions.js';
 import type { AgulFieldPlugin } from './types.js';
-import type { SchemaObject } from '@agul/core';
+import type { SchemaObject } from '@ai-kit/agul-core';
 
 const baseContext = {
   name: 'avatarUrl',

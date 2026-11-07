@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Form, Input, Layout, Menu, Modal, Typography, theme } from 'antd';
 import { ApiOutlined, SearchOutlined } from '@ant-design/icons';
 import { matchPath, useLocation } from 'react-router-dom';
-import type { MenuItem } from '@agul/core';
+import type { MenuItem } from '@ai-kit/agul-core';
 import { useAgulNavigate, useAgulRuntime } from '../runtime.js';
 import { formatLabel } from './format.js';
 

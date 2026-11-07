@@ -15,7 +15,7 @@ import {
   type RouteConfig,
   type SchemaObject,
   type UiKind,
-} from '@agul/core';
+} from '@ai-kit/agul-core';
 
 export interface GenerateUIOptions {
   baseUrl?: string;
@@ -144,7 +144,7 @@ function buildGeneratedUIConfig(
     })),
     embed: {
       react: embedReact,
-      install: 'npm install @agul/react antd @ant-design/icons axios dayjs swr react-router-dom',
+      install: 'npm install @ai-kit/agul-react antd @ant-design/icons axios dayjs swr react-router-dom',
     },
     previewUrl: previewBaseUrl
       ? `${previewBaseUrl.replace(/\/$/, '')}/`
@@ -167,7 +167,7 @@ export async function generateUIFromOpenAPI(
 
   return buildGeneratedUIConfig(
     parsed,
-    `import { AGULRenderer } from '@agul/react';\n\n<AGULRenderer spec={openApiSpec} baseUrl="${parsed.baseUrl}"${decisionsProp} />`,
+    `import { AGULRenderer } from '@ai-kit/agul-react';\n\n<AGULRenderer spec={openApiSpec} baseUrl="${parsed.baseUrl}"${decisionsProp} />`,
     options,
   );
 }
@@ -190,7 +190,7 @@ export async function generateUIFromJsonSchema(
 
   return buildGeneratedUIConfig(
     parsed,
-    `import { AGULRenderer } from '@agul/react';\n\n<AGULRenderer jsonSchema={jsonSchema} baseUrl="${parsed.baseUrl}"${resourcePathAttr} />`,
+    `import { AGULRenderer } from '@ai-kit/agul-react';\n\n<AGULRenderer jsonSchema={jsonSchema} baseUrl="${parsed.baseUrl}"${resourcePathAttr} />`,
     { previewBaseUrl: options.previewBaseUrl },
   );
 }

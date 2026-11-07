@@ -1,7 +1,7 @@
 import { Form, Upload } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { UploadFile } from 'antd';
-import type { AgulFieldPlugin } from '@agul/react';
+import type { AgulFieldPlugin } from '@ai-kit/agul-react';
 
 function toUploadFileList(value: unknown): UploadFile[] {
   const urls = Array.isArray(value) ? value.filter((item) => typeof item === 'string') : [];

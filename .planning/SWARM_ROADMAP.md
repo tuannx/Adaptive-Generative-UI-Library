@@ -12,14 +12,14 @@ npm run swarm:status
 - [x] npm workspaces monorepo
 - [x] TypeScript 7
 - [x] turbo pipeline
-- [x] vitest for @agul/core
+- [x] vitest for @ai-kit/agul-core
 - [x] GitHub Actions CI
 - [x] AGENTS.md + swarm scripts
 - [x] AGULRenderer public API
 
 ## Phase 1 — Library
 
-- [ ] npm publish @agul/core, @agul/react
+- [ ] npm publish @ai-kit/agul-core, @ai-kit/agul-react
 - [ ] Changesets release workflow
 - [ ] API documentation (typedoc or similar)
 

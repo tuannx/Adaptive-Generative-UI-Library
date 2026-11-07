@@ -33,7 +33,7 @@ test.describe('AGUL Demo — Petstore UI', () => {
 
 test.describe('AGUL Demo — MCP workflow validation', () => {
   test('demo menu aligns with MCP-generated config', async ({ page }) => {
-    const { generateUIFromOpenAPI } = await import('@agul/mcp');
+    const { generateUIFromOpenAPI } = await import('@ai-kit/agul-mcp');
 
     const specResponse = await page.request.get('/examples/petstore.json');
     const spec = await specResponse.json();

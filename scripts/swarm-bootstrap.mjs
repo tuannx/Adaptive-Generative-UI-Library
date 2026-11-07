@@ -13,7 +13,7 @@ const REPO = 'tuannx/Adaptive-Generative-UI-Library';
 const TASKS = [
   {
     phase: 'phase:1-library',
-    title: 'Publish @agul/core and @agul/react to npm',
+    title: 'Publish @ai-kit/agul-core and @ai-kit/agul-react to npm',
     body: `## Goal
 Make packages installable via npm with proper exports and peer deps.
 
@@ -23,7 +23,7 @@ Make packages installable via npm with proper exports and peer deps.
 - [ ] README install instructions work
 
 ## Ship-Validate
-Ship: npm publish config. Validate: fresh Vite app imports @agul/react.`,
+Ship: npm publish config. Validate: fresh Vite app imports @ai-kit/agul-react.`,
   },
   {
     phase: 'phase:2-agent-api',

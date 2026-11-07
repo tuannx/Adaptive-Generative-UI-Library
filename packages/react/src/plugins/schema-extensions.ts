@@ -1,4 +1,4 @@
-import type { SchemaObject } from '@agul/core';
+import type { SchemaObject } from '@ai-kit/agul-core';
 import type { AgulWizardConfig, AgulWizardStep } from './types.js';
 
 export function readSchemaExtension(schema: SchemaObject, key: string): unknown {

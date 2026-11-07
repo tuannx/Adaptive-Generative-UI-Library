@@ -30,7 +30,7 @@ import {
   type UiDecision,
   type UiDecisionProvider,
   type UiPlan,
-} from '@agul/core';
+} from '@ai-kit/agul-core';
 import { ActionView } from './components/ActionView.js';
 import { ChatView } from './components/ChatView.js';
 import { AppLayout } from './components/AppLayout.js';

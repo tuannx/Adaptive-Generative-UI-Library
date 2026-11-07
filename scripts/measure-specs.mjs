@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-// Measures how much usable UI @agul/core derives from real-world OpenAPI specs.
+// Measures how much usable UI @ai-kit/agul-core derives from real-world OpenAPI specs.
 // Usage: node scripts/measure-specs.mjs <dir-with-json-or-yaml-specs> [--json]
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, extname, basename } from 'node:path';
 import { load as loadYaml, CORE_SCHEMA, mergeTag } from 'js-yaml';
-import { parseOpenAPISync, planUi, isPrimitiveSchema } from '@agul/core';
+import { parseOpenAPISync, planUi, isPrimitiveSchema } from '@ai-kit/agul-core';
 
 const dir = process.argv[2];
 if (!dir) {

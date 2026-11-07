@@ -19,7 +19,7 @@ export default defineConfig({
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
-    command: 'npm run build --workspace=@agul/demo && npm run preview --workspace=@agul/demo -- --port 4173 --host 127.0.0.1',
+    command: 'npm run build --workspace=@ai-kit/agul-demo && npm run preview --workspace=@ai-kit/agul-demo -- --port 4173 --host 127.0.0.1',
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

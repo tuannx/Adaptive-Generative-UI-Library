@@ -1,7 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Link, Route, Routes } from 'react-router-dom';
-import { AGULRenderer } from '@agul/react';
+import { AGULRenderer } from '@ai-kit/agul-react';
 import petstore from './petstore.json';
 
 createRoot(document.getElementById('root')!).render(

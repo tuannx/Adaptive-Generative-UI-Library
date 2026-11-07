@@ -18,7 +18,7 @@
     "lint": "turbo typecheck",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "turbo build --filter=@agul/core --filter=@agul/react --filter=@agul/mcp && changeset publish",
+    "release": "turbo build --filter=@ai-kit/agul-core --filter=@ai-kit/agul-react --filter=@ai-kit/agul-mcp && changeset publish",
     "verify-pack": "node scripts/verify-pack.mjs",
     "swarm:status": "node scripts/swarm-status.mjs",
     "swarm:next": "node scripts/swarm-next.mjs",
@@ -27,7 +27,7 @@
     "pages:build": "node scripts/build-pages.mjs"
   },
   "devDependencies": {
-    "@agul/mcp": "0.1.0",
+    "@ai-kit/agul-mcp": "0.1.0",
     "@changesets/cli": "^2.29.8",
     "@playwright/test": "^1.56.1",
     "js-yaml": "^5.5.0",

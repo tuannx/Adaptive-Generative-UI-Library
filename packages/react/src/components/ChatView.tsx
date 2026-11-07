@@ -1,7 +1,7 @@
 import React from 'react';
 import { Alert, Avatar, Button, Card, Collapse, Empty, Form, Input, Space, Typography } from 'antd';
 import { RobotOutlined, SendOutlined, StopOutlined, UserOutlined, ClearOutlined } from '@ant-design/icons';
-import { buildApiUrl, type OperationPage, type SchemaObject } from '@agul/core';
+import { buildApiUrl, type OperationPage, type SchemaObject } from '@ai-kit/agul-core';
 import { useAgulPlugins } from '../plugins/PluginContext.js';
 import { readPath, readStream, extractChunkText } from '../http/stream.js';
 import { useAgulRuntime } from '../runtime.js';

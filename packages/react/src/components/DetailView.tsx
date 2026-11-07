@@ -3,7 +3,7 @@ import { Card, Descriptions, Button, Space, Popconfirm, Skeleton, Alert, App } f
 import { EditOutlined, DeleteOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { useParams } from 'react-router-dom';
 import useSWR from 'swr';
-import { buildApiUrl, buildPathParamsFromRecord, buildRouterPath, type Resource } from '@agul/core';
+import { buildApiUrl, buildPathParamsFromRecord, buildRouterPath, type Resource } from '@ai-kit/agul-core';
 import { useAgulFetcher, useAgulNavigate, useAgulRuntime, useRevalidateList } from '../runtime.js';
 import { describeApiError } from '../http/errors.js';
 import { formatLabel, unwrapRecord } from './format.js';

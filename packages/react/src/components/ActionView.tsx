@@ -2,7 +2,7 @@ import React from 'react';
 import { Alert, Button, Card, Divider, Form, Input, InputNumber, Select, Space, Switch, Tag, Typography } from 'antd';
 import { CaretRightOutlined, StopOutlined } from '@ant-design/icons';
 import { useSWRConfig } from 'swr';
-import { buildApiUrl, type OperationPage, type ParameterObject, type SchemaObject } from '@agul/core';
+import { buildApiUrl, type OperationPage, type ParameterObject, type SchemaObject } from '@ai-kit/agul-core';
 import { useAgulPlugins } from '../plugins/PluginContext.js';
 import { encodeBody } from '../http/encode.js';
 import { readStream } from '../http/stream.js';

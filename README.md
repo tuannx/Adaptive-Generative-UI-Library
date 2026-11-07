@@ -1,14 +1,14 @@
 # AGUL - Adaptive Generative UI Library
 
-> **OpenAPI → React UI** for AI Agents. Monorepo with `@agul/core`, `@agul/react`, and demo app.
+> **OpenAPI → React UI** for AI Agents. Monorepo with `@ai-kit/agul-core`, `@ai-kit/agul-react`, and demo app.
 
 ## Install
 
 ```bash
-npm install @agul/react
+npm install @ai-kit/agul-react
 ```
 
-`@agul/react` includes `@agul/core` as a dependency. Peer dependencies (install in your app):
+`@ai-kit/agul-react` includes `@ai-kit/agul-core` as a dependency. Peer dependencies (install in your app):
 
 ```bash
 npm install react react-dom antd @ant-design/icons axios dayjs swr react-router-dom
@@ -29,7 +29,7 @@ npm run swarm:next   # pick next GitHub swarm task
 ## Library Usage (Agent-friendly)
 
 ```tsx
-import { AGULRenderer } from '@agul/react';
+import { AGULRenderer } from '@ai-kit/agul-react';
 
 <AGULRenderer specUrl="/openapi.json" baseUrl="https://api.example.com" />
 ```
@@ -43,14 +43,14 @@ Inside an existing router, mount it under a splat route — AGUL detects the hos
 Or programmatic:
 
 ```ts
-import { createAGULFromSpec } from '@agul/react';
+import { createAGULFromSpec } from '@ai-kit/agul-react';
 
 const { api, resources, routes, menu } = await createAGULFromSpec(openApiJson);
 ```
 
 ## How It Works
 
-`@agul/core` turns the spec into **resources** (`buildResources`): endpoints are grouped by collection path, and each
+`@ai-kit/agul-core` turns the spec into **resources** (`buildResources`): endpoints are grouped by collection path, and each
 resource carries its `list` / `detail` / `create` / `update` / `remove` operations plus a fully dereferenced record schema.
 
 | Spec | Generated page |
@@ -111,11 +111,11 @@ proxy (toggle "Proxy / Direct" in the toolbar); the library equivalent is `<AGUL
 ```bash
 # From your machine (opens a browser to log in once):
 npx wrangler login
-npm run build && npm run deploy --workspace=@agul/demo
+npm run build && npm run deploy --workspace=@ai-kit/agul-demo
 # → https://agul-demo.<your-subdomain>.workers.dev
 
 # Local check with the real Workers runtime:
-npm run build && npm run cf:dev --workspace=@agul/demo   # http://localhost:8787
+npm run build && npm run cf:dev --workspace=@ai-kit/agul-demo   # http://localhost:8787
 ```
 
 Or from GitHub: copy `docs/github-workflows/deploy-demo.yml` to `.github/workflows/`, add repository
@@ -128,15 +128,15 @@ Variables in the Cloudflare dashboard). Add your own API's host there; never set
 ## MCP Server (Agents)
 
 ```bash
-npm install @agul/mcp
-# Cursor MCP config: { "command": "npx", "args": ["-y", "@agul/mcp"] }
+npm install @ai-kit/agul-mcp
+# Cursor MCP config: { "command": "npx", "args": ["-y", "@ai-kit/agul-mcp"] }
 ```
 
 Tool `generate_ui_from_openapi` — pass OpenAPI JSON, get routes, menu, React embed snippet.
 
 ## Publishing
 
-Packages `@agul/core`, `@agul/react`, and `@agul/mcp` are versioned with [Changesets](https://github.com/changesets/changesets). The release workflow opens a version PR and publishes to npm when merged (requires `NPM_TOKEN` secret).
+Packages `@ai-kit/agul-core`, `@ai-kit/agul-react`, and `@ai-kit/agul-mcp` are versioned with [Changesets](https://github.com/changesets/changesets). The release workflow opens a version PR and publishes to npm when merged (requires `NPM_TOKEN` secret).
 
 ```bash
 npm run changeset          # describe your change
@@ -147,10 +147,10 @@ npm run verify-pack        # verify tarballs before publish
 ## Monorepo Structure
 
 ```
-packages/core/   @agul/core   — parser, generator (no React)
-packages/react/  @agul/react  — AGULRenderer, CRUD views
-packages/mcp/    @agul/mcp    — MCP server for agents
-apps/demo/       @agul/demo   — Vite demo app
+packages/core/   @ai-kit/agul-core   — parser, generator (no React)
+packages/react/  @ai-kit/agul-react  — AGULRenderer, CRUD views
+packages/mcp/    @ai-kit/agul-mcp    — MCP server for agents
+apps/demo/       @ai-kit/agul-demo   — Vite demo app
 apps/validate-consumer/      — ship-validate: workspace import smoke test
 ```
 

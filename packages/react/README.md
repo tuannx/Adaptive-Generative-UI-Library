@@ -1,4 +1,4 @@
-# @agul/react
+# @ai-kit/agul-react
 
 OpenAPI / Swagger spec in, React admin UI out: CRUD pages for every resource, forms for actions, streaming chat
 for AI endpoints, and sign-in plus role-based access from the spec's `securitySchemes`.
@@ -6,11 +6,11 @@ for AI endpoints, and sign-in plus role-based access from the spec's `securitySc
 **[Live demo](https://tuannx.github.io/Adaptive-Generative-UI-Library/demo/)** · [Docs](https://github.com/tuannx/Adaptive-Generative-UI-Library#readme)
 
 ```bash
-npm install @agul/react react react-dom antd @ant-design/icons axios dayjs swr react-router-dom
+npm install @ai-kit/agul-react react react-dom antd @ant-design/icons axios dayjs swr react-router-dom
 ```
 
 ```tsx
-import { AGULRenderer } from '@agul/react';
+import { AGULRenderer } from '@ai-kit/agul-react';
 
 export default function Admin() {
   return <AGULRenderer specUrl="/openapi.json" auth={{ oauth: { clientId: 'admin-ui' } }} />;

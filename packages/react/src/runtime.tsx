@@ -2,7 +2,7 @@ import React from 'react';
 import type { AxiosInstance } from 'axios';
 import { useLocation, useNavigate, type NavigateOptions } from 'react-router-dom';
 import { useSWRConfig } from 'swr';
-import { buildApiUrl, type Resource, type SchemaObject } from '@agul/core';
+import { buildApiUrl, type Resource, type SchemaObject } from '@ai-kit/agul-core';
 import { agulHttp } from './http/client.js';
 
 export interface AgulRuntime {

@@ -1,6 +1,6 @@
 # Real-world spec coverage
 
-How much usable admin UI `@agul/core` derives from 19 public OpenAPI specs (Stripe, GitHub, Twilio,
+How much usable admin UI `@ai-kit/agul-core` derives from 19 public OpenAPI specs (Stripe, GitHub, Twilio,
 Kubernetes, NetBox, Jira, Keycloak, …; 9,500 endpoints in total). Measured on 2026-10-15.
 
 Reproduce:
@@ -8,7 +8,7 @@ Reproduce:
 ```bash
 mkdir -p /tmp/specs
 grep -v '^#' scripts/real-world-specs.txt | while read name url; do curl -sL -o /tmp/specs/$name "$url"; done
-npm run build --workspace=@agul/core
+npm run build --workspace=@ai-kit/agul-core
 node scripts/measure-specs.mjs /tmp/specs
 ```
 

@@ -23,7 +23,7 @@ import {
   buildRouterPath,
   type Resource,
   type SchemaObject,
-} from '@agul/core';
+} from '@ai-kit/agul-core';
 import { useAgulPlugins } from '../plugins/PluginContext.js';
 import { readWizardConfig } from '../plugins/schema-extensions.js';
 import { resolveFieldPlugin } from '../plugins/registry.js';

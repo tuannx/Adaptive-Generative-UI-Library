@@ -5,9 +5,9 @@ import { tmpdir } from 'node:os';
 
 const root = resolve(import.meta.dirname, '..');
 const packages = [
-  { dir: 'packages/core', name: '@agul/core' },
-  { dir: 'packages/react', name: '@agul/react' },
-  { dir: 'packages/mcp', name: '@agul/mcp' },
+  { dir: 'packages/core', name: '@ai-kit/agul-core' },
+  { dir: 'packages/react', name: '@ai-kit/agul-react' },
+  { dir: 'packages/mcp', name: '@ai-kit/agul-mcp' },
 ];
 
 function run(cmd, cwd = root) {
@@ -15,7 +15,7 @@ function run(cmd, cwd = root) {
 }
 
 console.log('Building publishable packages...');
-run('npm run build --workspace=@agul/core --workspace=@agul/react --workspace=@agul/mcp');
+run('npm run build --workspace=@ai-kit/agul-core --workspace=@ai-kit/agul-react --workspace=@ai-kit/agul-mcp');
 
 const packDir = mkdtempSync(join(tmpdir(), 'agul-pack-verify-'));
 
@@ -53,7 +53,7 @@ try {
   }
 
   console.log('Building validate-consumer...');
-  run('npm run build --workspace=@agul/validate-consumer');
+  run('npm run build --workspace=@ai-kit/agul-validate-consumer');
   console.log('✓ validate-consumer build succeeded');
 } finally {
   rmSync(packDir, { recursive: true, force: true });

@@ -39,7 +39,7 @@ jobs:
 
       - run: npm run build
 
-      - run: npm run build:cloudflare --workspace=@agul/demo
+      - run: npm run build:cloudflare --workspace=@ai-kit/agul-demo
 
       - id: deploy
         uses: cloudflare/wrangler-action@v3

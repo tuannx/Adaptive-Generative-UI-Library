@@ -38,13 +38,13 @@ shapes are understood. `x-agul-stream: sse | ndjson | text` forces a format.
 ## Configuring a provider
 
 ```tsx
-import { AGULRenderer, createHttpDecisionProvider } from '@agul/react';
+import { AGULRenderer, createHttpDecisionProvider } from '@ai-kit/agul-react';
 
 // Your own decision API, or the AGUL Worker's /decide route (below)
 <AGULRenderer specUrl="/openapi.json" decisionProvider={createHttpDecisionProvider({ url: '/decide' })} />
 ```
 
-Any LLM can be plugged in server-side with `createLlmDecisionProvider({ complete })` from `@agul/core`:
+Any LLM can be plugged in server-side with `createLlmDecisionProvider({ complete })` from `@ai-kit/agul-core`:
 `complete` receives `{ system, prompt, schema }` (the schema is `DECISION_JSON_SCHEMA`, ready to use as a
 structured-output format) and returns the model's JSON text. Keep API keys on the server — never pass an LLM
 key to the browser.
