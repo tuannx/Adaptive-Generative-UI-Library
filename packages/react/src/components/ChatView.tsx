@@ -7,6 +7,7 @@ import { readPath, readStream, extractChunkText } from '../http/stream.js';
 import { useAgulRuntime } from '../runtime.js';
 import { describeApiError, responseError } from '../http/errors.js';
 import { renderSchemaFields, schemaDefaults } from './FormView.js';
+import { useListChanges } from '../effects/MotionContext.js';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -42,6 +43,7 @@ export function ChatView({ page }: { page: OperationPage }) {
   const plugins = useAgulPlugins();
   const [settings] = Form.useForm();
   const [messages, setMessages] = React.useState<ChatMessage[]>([]);
+  const list = useListChanges('chat');
   const [draft, setDraft] = React.useState('');
   const [sending, setSending] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -179,6 +181,7 @@ export function ChatView({ page }: { page: OperationPage }) {
       )}
 
       <div
+        {...list}
         data-testid="agul-chat-messages"
         style={{ minHeight: 280, maxHeight: '55vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12, padding: 4 }}
       >

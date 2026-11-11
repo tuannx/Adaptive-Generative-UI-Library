@@ -19,6 +19,10 @@
     "./effects/motion": {
       "types": "./dist/effects/motion/index.d.ts",
       "import": "./dist/effects/motion/index.js"
+    },
+    "./effects/auto-animate": {
+      "types": "./dist/effects/auto-animate/index.d.ts",
+      "import": "./dist/effects/auto-animate/index.js"
     }
   },
   "files": [
@@ -51,6 +55,7 @@
   },
   "peerDependencies": {
     "@ant-design/icons": "^6.0.0",
+    "@formkit/auto-animate": "^0.10.0",
     "antd": "^6.0.0",
     "axios": "^1.0.0",
     "dayjs": "^1.11.0",
@@ -62,6 +67,9 @@
   },
   "peerDependenciesMeta": {
     "@ant-design/icons": {
+      "optional": true
+    },
+    "@formkit/auto-animate": {
       "optional": true
     },
     "antd": {
@@ -89,6 +97,7 @@
   },
   "devDependencies": {
     "@ant-design/icons": "^6.3.4",
+    "@formkit/auto-animate": "^0.10.2",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^26.6.6",
     "@types/react": "^19.2.2",

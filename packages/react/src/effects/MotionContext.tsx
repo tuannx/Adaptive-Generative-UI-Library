@@ -2,7 +2,7 @@ import React from 'react';
 import { resolveMotion, type MotionConfig, type MotionRegion, type ResolvedMotion } from '@aikitstudio/agul-core';
 import { enterStyle, MOTION_CSS } from './css-motion.js';
 import { useEffectDriver } from './load-effects.js';
-import { createEnterRef, type AgulEffectPlugin, type AgulMotionDriver } from './plugin.js';
+import { createEnterRef, createListRef, type AgulEffectPlugin, type AgulMotionDriver } from './plugin.js';
 import { usePrefersReducedMotion } from './reduced-motion.js';
 
 interface MotionState {
@@ -64,6 +64,19 @@ export function useEnter(region: MotionRegion): (index?: number) => EnterProps {
       const ref = createEnterRef(driver, motion, index);
       return driver?.enter ? { ref } : { style: enterStyle(motion, index), ref };
     },
+    [motion, driver],
+  );
+}
+
+/**
+ * Props for a container whose children are added, removed or reordered (cards, chat messages).
+ * Only a plugin with a `list` driver animates this; otherwise it returns `{}`.
+ */
+export function useListChanges(region: MotionRegion): { ref?: (element: HTMLElement | null) => void } {
+  const motion = useAgulMotion(region);
+  const { driver } = React.useContext(MotionContext);
+  return React.useMemo(
+    () => (motion?.listChanges === 'auto' && driver?.list ? { ref: createListRef(driver, motion) } : {}),
     [motion, driver],
   );
 }

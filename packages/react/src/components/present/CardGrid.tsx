@@ -2,7 +2,7 @@ import { Card, Col, Row, Space, Tag, Typography } from 'antd';
 import { formatDisplayValue, statusTone, type PresentPlan } from '@aikitstudio/agul-core';
 import { formatLabel } from '../format.js';
 import { toneColor } from './tone.js';
-import { useEnter } from '../../effects/MotionContext.js';
+import { useEnter, useListChanges } from '../../effects/MotionContext.js';
 
 type Row = Record<string, unknown>;
 
@@ -17,8 +17,9 @@ interface CardGridProps {
 /** Rows as a responsive grid of cards: image on top, title, status, a few short fields. */
 export function CardGrid({ rows, plan, onOpen, rowKey = (_, index) => String(index) }: CardGridProps) {
   const enter = useEnter('cards');
+  const list = useListChanges('cards');
   return (
-    <Row gutter={[16, 16]} data-testid="agul-card-grid">
+    <Row gutter={[16, 16]} data-testid="agul-card-grid" {...list}>
       {rows.map((row, index) => {
         const image = plan.image ? row[plan.image] : undefined;
         const title = plan.title ? row[plan.title] : undefined;

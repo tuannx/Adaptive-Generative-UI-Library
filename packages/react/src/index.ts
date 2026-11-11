@@ -18,7 +18,7 @@ export { startAuthorization, completeAuthorization, requestToken, refreshCredent
 export type { GetAuthHeaders, AgulAuthConfig } from './http/client.js';
 
 export { PluginProvider, useAgulPlugins } from './plugins/PluginContext.js';
-export { AgulMotionProvider, useAgulMotion, useEnter, type EnterProps } from './effects/MotionContext.js';
+export { AgulMotionProvider, useAgulMotion, useEnter, useListChanges, type EnterProps } from './effects/MotionContext.js';
 export { enterStyle, springEasing, EASE_CSS, EASE_BEZIER, ENTER_FROM, MOTION_CSS } from './effects/css-motion.js';
 export type { AgulEffectPlugin, AgulMotionDriver } from './effects/plugin.js';
 export { usePrefersReducedMotion } from './effects/reduced-motion.js';
