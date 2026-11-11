@@ -11,6 +11,7 @@ const scenarios = [
   { id: 'core', label: '@aikitstudio/agul-core (parse + plan, no React)', code: "export { parseOpenAPI, planUi } from '@aikitstudio/agul-core';" },
   { id: 'headless', label: '@aikitstudio/agul-react/headless useAgulFlow (no antd)', code: "export { useAgulFlow } from '@aikitstudio/agul-react/headless';" },
   { id: 'renderer', label: '@aikitstudio/agul-react AGULRenderer (antd included)', code: "export { AGULRenderer } from '@aikitstudio/agul-react';" },
+  { id: 'effects-motion', label: '@aikitstudio/agul-react/effects/motion (lazy chunk, motion/mini included)', code: "export { motionEffects } from '@aikitstudio/agul-react/effects/motion';" },
   { id: 'antd-form', label: 'antd Form + Input baseline', code: "export { Form, Input, Button } from 'antd';" },
 ];
 
