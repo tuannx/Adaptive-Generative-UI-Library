@@ -13,6 +13,9 @@ import { useSWRConfig } from 'swr';
 import {
   generateRoutes,
   heuristicDecisions,
+  mergeMotionConfigs,
+  normalizeMotionConfig,
+  readMotionConfig,
   planUi,
   resolveDecisions,
   withDecisionCache,
@@ -22,6 +25,8 @@ import {
   wrapJsonSchemaAsOpenAPI,
   type AccessGrants,
   type JsonSchemaInputOptions,
+  type MotionConfig,
+  type MotionPreset,
   type OperationPage,
   type ParsedAPI,
   type Resource,
@@ -43,6 +48,7 @@ import { AgulAuthProvider, AuthMenu, SignInModal, SignInPanel } from './auth/Aut
 import { PluginProvider } from './plugins/PluginContext.js';
 import type { AgulFieldPlugin } from './plugins/types.js';
 import { AgulRuntimeProvider, type AgulRuntime } from './runtime.js';
+import { AgulMotionProvider } from './effects/MotionContext.js';
 
 export interface AGULRendererProps {
   /** OpenAPI/Swagger spec object */
@@ -73,6 +79,12 @@ export interface AGULRendererProps {
   plugins?: AgulFieldPlugin[];
   /** Ant Design primary color */
   primaryColor?: string;
+  /**
+   * How cards, stats and timelines animate: a preset name (`subtle`, `smooth`, `playful`, `cinematic`, `none`)
+   * or a full motion config. `x-agul-motion` at the spec root wins. Off when neither is set.
+   * Respects the viewer's `prefers-reduced-motion`.
+   */
+  motion?: MotionConfig | MotionPreset;
   /**
    * Prefix for a same-origin CORS proxy; absolute API and spec URLs are requested as
    * `${proxyUrl}${url}` (e.g. `/proxy/`). See `apps/demo/worker` for a Cloudflare implementation.
@@ -131,6 +143,7 @@ function AGULApp({
   authorities,
   proxyUrl,
   plugins = [],
+  motion,
   decisionProvider,
   cacheDecisions = true,
   onDecisions,
@@ -153,6 +166,15 @@ function AGULApp({
   const stableSpec = useStableValue(spec);
   const stableSchema = useStableValue(jsonSchema);
   const fetched = useFetchedSpec(specUrl, proxyUrl);
+  const stableMotion = useStableValue(motion);
+  const motionConfig = React.useMemo(
+    () =>
+      mergeMotionConfigs(
+        normalizeMotionConfig(stableMotion),
+        readMotionConfig(stableSpec ?? (fetched.status === 'ready' ? fetched.spec : undefined)),
+      ),
+    [stableMotion, stableSpec, fetched],
+  );
 
   const state = React.useMemo<ModelState>(() => {
     try {
@@ -263,6 +285,7 @@ function AGULApp({
     <AgulAuthProvider value={authState}>
     <AgulRuntimeProvider value={runtime!}>
       <PluginProvider plugins={plugins}>
+      <AgulMotionProvider config={motionConfig}>
         <AppLayout
           menu={plan.menu}
           apiTitle={state.api.title}
@@ -320,6 +343,7 @@ function AGULApp({
             />
           </Routes>
         </AppLayout>
+      </AgulMotionProvider>
         <SignInModal />
       </PluginProvider>
     </AgulRuntimeProvider>
