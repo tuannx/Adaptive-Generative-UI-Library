@@ -5,7 +5,11 @@ export default defineConfig({
     environment: 'node',
   },
   pack: {
-    entry: { index: 'src/index.ts', 'headless/index': 'src/headless/index.ts' },
+    entry: {
+      index: 'src/index.ts',
+      'headless/index': 'src/headless/index.ts',
+      'effects/motion/index': 'src/effects/motion/index.ts',
+    },
     format: ['esm'],
     fixedExtension: false,
     dts: false,
@@ -24,6 +28,8 @@ export default defineConfig({
         'dayjs',
         'js-yaml',
         '@aikitstudio/agul-core',
+        'motion',
+        'motion/mini',
       ],
     },
   },

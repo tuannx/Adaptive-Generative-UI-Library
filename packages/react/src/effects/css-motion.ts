@@ -24,31 +24,52 @@ export function springEasing(damping: number, points = 32): string {
   return `linear(${values.join(', ')})`;
 }
 
+type BezierEase = Exclude<MotionEase, 'linear' | 'spring-soft' | 'spring-bouncy'>;
+
+/** Cubic-bezier control points of the curve tokens; shared with plugin drivers. */
+export const EASE_BEZIER: Record<BezierEase, [number, number, number, number]> = {
+  standard: [0.2, 0, 0, 1],
+  emphasized: [0.05, 0.7, 0.1, 1],
+  decelerate: [0, 0, 0, 1],
+  accelerate: [0.3, 0, 1, 1],
+};
+
+const bezier = (ease: BezierEase) => `cubic-bezier(${EASE_BEZIER[ease].join(', ')})`;
+
 /** CSS timing functions for each ease token. */
 export const EASE_CSS: Record<MotionEase, string> = {
-  standard: 'cubic-bezier(0.2, 0, 0, 1)',
-  emphasized: 'cubic-bezier(0.05, 0.7, 0.1, 1)',
-  decelerate: 'cubic-bezier(0, 0, 0, 1)',
-  accelerate: 'cubic-bezier(0.3, 0, 1, 1)',
+  standard: bezier('standard'),
+  emphasized: bezier('emphasized'),
+  decelerate: bezier('decelerate'),
+  accelerate: bezier('accelerate'),
   linear: 'linear',
   'spring-soft': springEasing(0.8),
   'spring-bouncy': springEasing(0.45),
 };
 
-/** Start state of each enter; every animation ends at the element's own style. */
-const ENTER_FROM: Record<Exclude<MotionEnter, 'none'>, string> = {
-  fade: 'opacity: 0;',
-  'slide-up': 'opacity: 0; transform: translateY(12px);',
-  'slide-left': 'opacity: 0; transform: translateX(16px);',
-  scale: 'opacity: 0; transform: scale(0.92);',
-  'blur-in': 'opacity: 0; filter: blur(8px); transform: scale(1.02);',
+export interface EnterFrom {
+  opacity: number;
+  transform?: string;
+  filter?: string;
+}
+
+/** Start state of each enter; every animation ends at the element's own style. Shared with plugin drivers. */
+export const ENTER_FROM: Record<Exclude<MotionEnter, 'none'>, EnterFrom> = {
+  fade: { opacity: 0 },
+  'slide-up': { opacity: 0, transform: 'translateY(12px)' },
+  'slide-left': { opacity: 0, transform: 'translateX(16px)' },
+  scale: { opacity: 0, transform: 'scale(0.92)' },
+  'blur-in': { opacity: 0, filter: 'blur(8px)', transform: 'scale(1.02)' },
 };
+
+const fromCss = ({ opacity, transform, filter }: EnterFrom) =>
+  [`opacity: ${opacity};`, transform && `transform: ${transform};`, filter && `filter: ${filter};`].filter(Boolean).join(' ');
 
 export const enterKeyframeName = (enter: MotionEnter) => `agul-enter-${enter}`;
 
 /** One stylesheet with every enter keyframe; rendered once by the motion provider. */
 export const MOTION_CSS = MOTION_ENTERS.filter((enter): enter is Exclude<MotionEnter, 'none'> => enter !== 'none')
-  .map((enter) => `@keyframes ${enterKeyframeName(enter)} { from { ${ENTER_FROM[enter]} } }`)
+  .map((enter) => `@keyframes ${enterKeyframeName(enter)} { from { ${fromCss(ENTER_FROM[enter])} } }`)
   .join('\n');
 
 /**

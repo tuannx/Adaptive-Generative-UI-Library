@@ -49,6 +49,7 @@ import { PluginProvider } from './plugins/PluginContext.js';
 import type { AgulFieldPlugin } from './plugins/types.js';
 import { AgulRuntimeProvider, type AgulRuntime } from './runtime.js';
 import { AgulMotionProvider } from './effects/MotionContext.js';
+import type { AgulEffectPlugin } from './effects/plugin.js';
 
 export interface AGULRendererProps {
   /** OpenAPI/Swagger spec object */
@@ -85,6 +86,11 @@ export interface AGULRendererProps {
    * Respects the viewer's `prefers-reduced-motion`.
    */
   motion?: MotionConfig | MotionPreset;
+  /**
+   * Optional animation libraries for `motion`, e.g. `motionEffects()` from
+   * `@aikitstudio/agul-react/effects/motion`. Loaded only when motion is on; CSS covers the rest.
+   */
+  effects?: AgulEffectPlugin[];
   /**
    * Prefix for a same-origin CORS proxy; absolute API and spec URLs are requested as
    * `${proxyUrl}${url}` (e.g. `/proxy/`). See `apps/demo/worker` for a Cloudflare implementation.
@@ -144,6 +150,7 @@ function AGULApp({
   proxyUrl,
   plugins = [],
   motion,
+  effects,
   decisionProvider,
   cacheDecisions = true,
   onDecisions,
@@ -285,7 +292,7 @@ function AGULApp({
     <AgulAuthProvider value={authState}>
     <AgulRuntimeProvider value={runtime!}>
       <PluginProvider plugins={plugins}>
-      <AgulMotionProvider config={motionConfig}>
+      <AgulMotionProvider config={motionConfig} effects={effects}>
         <AppLayout
           menu={plan.menu}
           apiTitle={state.api.title}
