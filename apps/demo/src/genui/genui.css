@@ -1,0 +1,19 @@
+.genui { max-width: 1180px; margin: 0 auto; padding: 24px 16px 48px; }
+.genui-header { margin-bottom: 16px; }
+.genui-header .ant-segmented { max-width: 100%; overflow-x: auto; }
+.genui-user {
+  margin: 8px 0 16px auto; width: fit-content; max-width: 80%;
+  padding: 10px 14px; border-radius: 16px 16px 4px 16px;
+  background: #4f46e5; color: #fff;
+}
+.genui-columns { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 16px; align-items: start; }
+@media (max-width: 860px) { .genui-columns { grid-template-columns: 1fr; } }
+.genui-panel__label { display: block; margin-bottom: 8px; }
+.genui-text { white-space: pre-wrap; margin-bottom: 8px; }
+.genui-step { margin-bottom: 12px; transition: opacity 0.2s; }
+.genui-step--off .ant-card-body { opacity: 0.45; }
+.genui-step .ant-form-item { margin-bottom: 10px; }
+.genui-step__icon { font-size: 18px; }
+.genui-step__app { font-weight: 400; font-size: 12px; }
+.genui-note { margin: 16px 0; }
+.genui-json { margin: 0; max-height: 420px; overflow: auto; font-size: 12px; }
