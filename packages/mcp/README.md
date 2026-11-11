@@ -15,6 +15,10 @@ React embed snippet. The calling agent can act as the layout decider: request th
 Both tools return the config as `structuredContent` (described by the tool's `outputSchema`) and, for older
 clients, as the same JSON in a text block.
 
+In hosts that support [MCP Apps](https://github.com/modelcontextprotocol/ext-apps), both tools open the
+`ui://agul/view.html` view, which shows the generated resources, pages and layout decisions. The view is one
+self-contained HTML file (about 73 kB gzip) built by `scripts/build-view.mjs` and needs no network access.
+
 ```ts
 import { generateUIFromOpenAPI } from '@aikitstudio/agul-mcp';
 const ui = await generateUIFromOpenAPI(spec);
