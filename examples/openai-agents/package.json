@@ -1,0 +1,22 @@
+{
+  "name": "agul-example-openai-agents",
+  "private": true,
+  "type": "module",
+  "description": "OpenAI Agents SDK calling agul-mcp",
+  "scripts": {
+    "start": "node agent.ts",
+    "check": "node agent.ts --check",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@openai/agents": "0.21.0",
+    "zod": "^4.0.0"
+  },
+  "engines": {
+    "node": ">=22.18"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.0",
+    "typescript": "^7.0.2"
+  }
+}
