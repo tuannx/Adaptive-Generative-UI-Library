@@ -12,6 +12,7 @@ const scenarios = [
   { id: 'headless', label: '@aikitstudio/agul-react/headless useAgulFlow (no antd)', code: "export { useAgulFlow } from '@aikitstudio/agul-react/headless';" },
   { id: 'renderer', label: '@aikitstudio/agul-react AGULRenderer (antd included)', code: "export { AGULRenderer } from '@aikitstudio/agul-react';" },
   { id: 'effects-motion', label: '@aikitstudio/agul-react/effects/motion (lazy chunk, motion/mini included)', code: "export { motionEffects } from '@aikitstudio/agul-react/effects/motion';" },
+  { id: 'effects-auto-animate', label: '@aikitstudio/agul-react/effects/auto-animate (lazy chunk, auto-animate included)', code: "export { autoAnimateEffects } from '@aikitstudio/agul-react/effects/auto-animate';" },
   { id: 'antd-form', label: 'antd Form + Input baseline', code: "export { Form, Input, Button } from 'antd';" },
 ];
 
