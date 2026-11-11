@@ -176,7 +176,7 @@ export function ActionView({ page }: { page: OperationPage }) {
         {hasBodyFields && page.body && renderSchemaFields(page.body, { schemas, plugins })}
         <Space>
           <Button type="primary" htmlType="submit" icon={<CaretRightOutlined />} loading={running} data-testid="agul-action-run">
-            Run
+            {page.submitLabel ?? 'Run'}
           </Button>
           {running && (
             <Button icon={<StopOutlined />} onClick={() => abortRef.current?.abort()}>

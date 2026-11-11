@@ -17,6 +17,7 @@ x-agul-view in the spec  >  decision provider (LLM / your decision API)  >  buil
 
 1. **Spec** — `x-agul-view: crud | action | chat | hidden` on an operation, plus optional
    `x-agul-chat: { messageField, historyField, sessionField, replyPath }`. Never overridden.
+   `x-agul-submit: "Confirm and send"` sets the text of an action's submit button (default "Run").
 2. **Decision provider** — anything implementing `UiDecisionProvider`. It receives a compact summary of
    every operation (fields, content types, whether the response streams, and what the rules decided) and
    returns decisions for the operations it wants to change. Invalid answers (unknown operation or kind, a

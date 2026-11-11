@@ -55,6 +55,34 @@ describe('heuristicDecisions (tarot chat backend)', () => {
   });
 });
 
+describe('planUi submit label', () => {
+  const api = (extra: Record<string, unknown>) =>
+    parseOpenAPISync({
+      openapi: '3.0.3',
+      info: { title: 'Plan', version: '1' },
+      paths: {
+        '/plans/confirm': {
+          post: {
+            operationId: 'confirmPlan',
+            'x-agul-view': 'action',
+            ...extra,
+            requestBody: { content: { 'application/json': { schema: { type: 'object', properties: { note: { type: 'string' } } } } } },
+            responses: { '200': { description: 'ok' } },
+          },
+        },
+      },
+    });
+
+  it('reads x-agul-submit as the button text', () => {
+    expect(planUi(api({ 'x-agul-submit': ' Confirm and send ' })).pages[0]?.submitLabel).toBe('Confirm and send');
+  });
+
+  it('leaves it unset when missing or not text', () => {
+    expect(planUi(api({})).pages[0]?.submitLabel).toBeUndefined();
+    expect(planUi(api({ 'x-agul-submit': 3 })).pages[0]?.submitLabel).toBeUndefined();
+  });
+});
+
 describe('heuristicDecisions (Petstore)', () => {
   const decisions = heuristicDecisions(parseOpenAPISync(structuredClone(petstore)));
 

@@ -432,6 +432,8 @@ export interface OperationPage {
   response?: SchemaObject;
   stream: StreamFormat;
   chat?: ChatBinding;
+  /** Text of the submit button, from `x-agul-submit` (e.g. "Confirm and send"). Renderers default to "Run". */
+  submitLabel?: string;
   decidedBy: DecisionSource;
 }
 
@@ -452,6 +454,11 @@ function humanizeOperation(endpoint: ParsedEndpoint): string {
     .replace(/[_-]+/g, ' ')
     .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
     .replace(/^./, (char) => char.toUpperCase());
+}
+
+function readSubmitLabel(endpoint: ParsedEndpoint): string | undefined {
+  const value = endpoint.extensions?.['x-agul-submit'];
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
 }
 
 export interface PlanOptions {
@@ -503,6 +510,7 @@ export function planUi(
       response: dereferenceSchema(getResponseSchema(endpoint.responses ?? {}) ?? undefined, api.schemas),
       stream: streamFormatOf(endpoint),
       chat: decision.chat,
+      submitLabel: readSubmitLabel(endpoint),
       decidedBy: decision.source,
     });
   }
