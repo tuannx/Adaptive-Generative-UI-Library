@@ -1,6 +1,7 @@
 import { Space, Tag, Timeline, Typography } from 'antd';
 import { formatDisplayValue, resolveDisplay, statusTone, type PresentPlan } from '@aikitstudio/agul-core';
 import { toneColor } from './tone.js';
+import { useEnterStyle } from '../../effects/MotionContext.js';
 
 type Row = Record<string, unknown>;
 
@@ -14,6 +15,7 @@ interface TimelineViewProps {
 
 /** Dated rows as a vertical timeline, newest first. */
 export function TimelineView({ rows, plan, onOpen }: TimelineViewProps) {
+  const enter = useEnterStyle('timeline');
   const dateKey = plan.date;
   const dateHint = dateKey
     ? plan.dateDisplay ?? resolveDisplay(dateKey, undefined, rows.find((row) => row[dateKey])?.[dateKey])
@@ -28,13 +30,13 @@ export function TimelineView({ rows, plan, onOpen }: TimelineViewProps) {
   return (
     <Timeline
       data-testid="agul-timeline"
-      items={sorted.map((row) => {
+      items={sorted.map((row, index) => {
         const status = plan.status ? row[plan.status] : undefined;
         const preset = toneColor(statusTone(status));
         return {
           color: status !== undefined ? TIMELINE_COLOR[preset] : 'blue',
           content: (
-            <Space orientation="vertical" size={2}>
+            <Space orientation="vertical" size={2} style={enter(index)}>
               {dateKey && dateHint && (
                 <Typography.Text type="secondary">{formatDisplayValue(row[dateKey], dateHint)}</Typography.Text>
               )}

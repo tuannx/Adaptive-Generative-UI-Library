@@ -18,6 +18,9 @@ export { startAuthorization, completeAuthorization, requestToken, refreshCredent
 export type { GetAuthHeaders, AgulAuthConfig } from './http/client.js';
 
 export { PluginProvider, useAgulPlugins } from './plugins/PluginContext.js';
+export { AgulMotionProvider, useAgulMotion, useEnterStyle } from './effects/MotionContext.js';
+export { enterStyle, springEasing, EASE_CSS, MOTION_CSS } from './effects/css-motion.js';
+export { usePrefersReducedMotion } from './effects/reduced-motion.js';
 export { resolveFieldPlugin } from './plugins/registry.js';
 export { choiceCardsPlugin, gameWidgetPlugins, progressXpPlugin, scoreMeterPlugin } from './plugins/game-widgets.js';
 export { ChoiceCards } from './components/widgets/ChoiceCards.js';
