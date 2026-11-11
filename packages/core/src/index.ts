@@ -12,3 +12,4 @@ export * from './display.js';
 export * from './present.js';
 export * from './flow.js';
 export * from './widgets.js';
+export * from './motion.js';
