@@ -7,6 +7,16 @@ MCP server that lets coding agents turn an OpenAPI spec into an admin UI with
 { "mcpServers": { "agul": { "command": "npx", "args": ["-y", "@aikitstudio/agul-mcp"] } } }
 ```
 
+For hosts that add an MCP server by URL, run it over Streamable HTTP:
+
+```bash
+npx -y @aikitstudio/agul-mcp --http            # http://127.0.0.1:3333/mcp
+npx -y @aikitstudio/agul-mcp --http --port 8080 --allowed-host my-tunnel.example.com
+```
+
+It listens on this machine only. To reach it from a hosted app, put an HTTPS tunnel in front and pass the tunnel's
+hostname with `--allowed-host`; requests with any other Host header are rejected.
+
 Tool **`generate_ui_from_openapi`** — `spec` (OpenAPI 3 / Swagger 2 JSON), optional `baseUrl`, `previewBaseUrl`,
 `includeOperationSummaries`, `decisions`. Returns routes, menu, action/chat pages, the layout decisions and a
 React embed snippet. The calling agent can act as the layout decider: request the summaries, then call again with
