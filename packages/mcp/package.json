@@ -19,7 +19,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "vp pack && tsc -p tsconfig.build.json",
+    "build": "vp pack && node scripts/build-view.mjs && tsc -p tsconfig.build.json",
     "dev": "vp pack --watch",
     "typecheck": "tsc --noEmit",
     "test": "vp test run",
@@ -28,7 +28,8 @@
   },
   "dependencies": {
     "@aikitstudio/agul-core": "0.1.0",
-    "@modelcontextprotocol/sdk": "^1.25.3",
+    "@modelcontextprotocol/ext-apps": "1.7.5",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "zod": "^4.6.7"
   },
   "devDependencies": {

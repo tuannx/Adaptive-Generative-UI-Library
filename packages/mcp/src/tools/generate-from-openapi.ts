@@ -1,7 +1,9 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { generateUIFromOpenAPI } from '../generate-ui.js';
+import { registerAppTool } from '@modelcontextprotocol/ext-apps/server';
 import { generatedUIOutputShape } from '../output-schema.js';
+import { AGUL_VIEW_URI } from '../view/resource.js';
 import { toToolResult } from './to-tool-result.js';
 
 const specSchema = z.record(z.string(), z.unknown());
@@ -22,7 +24,8 @@ const decisionSchema = z.object({
 });
 
 export function registerGenerateFromOpenApi(server: McpServer): void {
-  server.registerTool(
+  registerAppTool(
+    server,
     'generate_ui_from_openapi',
     {
       title: 'Generate UI from OpenAPI',
@@ -42,6 +45,7 @@ export function registerGenerateFromOpenApi(server: McpServer): void {
           .describe('Your layout decisions; x-agul-view in the spec still wins, invalid entries are ignored'),
       },
       outputSchema: generatedUIOutputShape,
+      _meta: { ui: { resourceUri: AGUL_VIEW_URI } },
     },
     async ({ spec, baseUrl, previewBaseUrl, includeOperationSummaries, decisions }) =>
       toToolResult(await generateUIFromOpenAPI(spec, { baseUrl, previewBaseUrl, includeOperationSummaries, decisions })),
