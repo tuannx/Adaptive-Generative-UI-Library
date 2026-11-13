@@ -42,6 +42,8 @@ export type { AgulRuntime } from './runtime.js';
 
 export { AppLayout } from './components/AppLayout.js';
 export { ActionView } from './components/ActionView.js';
+export type { ActionViewProps } from './components/ActionView.js';
+export type { ActionAppearance } from './components/ActionResult.js';
 export { ChatView } from './components/ChatView.js';
 export { ResultView } from './components/ResultView.js';
 export { readStream, extractChunkText } from './http/stream.js';

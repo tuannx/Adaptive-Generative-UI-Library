@@ -1,6 +1,6 @@
 import React from 'react';
-import { Alert, Button, Card, Divider, Form, Input, InputNumber, Select, Space, Switch, Tag, Typography } from 'antd';
-import { CaretRightOutlined, StopOutlined } from '@ant-design/icons';
+import { Button, Card, Form, Input, InputNumber, Select, Space, Switch, Tag, Typography } from 'antd';
+import { CaretRightOutlined, CheckOutlined, StopOutlined } from '@ant-design/icons';
 import { useSWRConfig } from 'swr';
 import { buildApiUrl, type OperationPage, type ParameterObject, type SchemaObject } from '@aikitstudio/agul-core';
 import { useAgulPlugins } from '../plugins/PluginContext.js';
@@ -10,7 +10,7 @@ import { describeApiError, responseError } from '../http/errors.js';
 import { useAgulRuntime } from '../runtime.js';
 import { renderSchemaFields, schemaDefaults } from './FormView.js';
 import { formatLabel } from './format.js';
-import { ResultView } from './ResultView.js';
+import { ActionResult, type ActionAppearance, type ActionOutcome } from './ActionResult.js';
 
 type Values = Record<string, unknown>;
 
@@ -75,14 +75,23 @@ function ParamField({ param }: { param: ParameterObject }) {
   );
 }
 
+export interface ActionViewProps {
+  page: OperationPage;
+  /** `tool` (default) shows method, path and HTTP status; `chat` hides them and locks the form once done. */
+  appearance?: ActionAppearance;
+  /** Draws the success value instead of the generic table / record view. */
+  renderResult?: (value: unknown) => React.ReactNode;
+}
+
 /** A form for any operation: parameters + request body in, result (or a live stream) out. */
-export function ActionView({ page }: { page: OperationPage }) {
+export function ActionView({ page, appearance = 'tool', renderResult }: ActionViewProps) {
+  const chat = appearance === 'chat';
   const { baseUrl, schemas, fetch: agulFetch } = useAgulRuntime();
   const plugins = useAgulPlugins();
   const { mutate } = useSWRConfig();
   const [form] = Form.useForm<Values>();
   const [running, setRunning] = React.useState(false);
-  const [result, setResult] = React.useState<{ status: number; value: unknown } | null>(null);
+  const [result, setResult] = React.useState<ActionOutcome | null>(null);
   const [streamed, setStreamed] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const abortRef = React.useRef<AbortController | null>(null);
@@ -157,51 +166,64 @@ export function ActionView({ page }: { page: OperationPage }) {
     }
   };
 
+  // in a chat, a confirmed card is a record of what was done: no second send
+  const done = chat && !!result && !running;
+
   return (
     <Card
       data-testid="agul-action-view"
+      data-appearance={appearance}
       title={
-        <Space>
-          <Tag color={METHOD_COLORS[page.method]}>{page.method.toUpperCase()}</Tag>
-          {page.label}
-        </Space>
+        chat ? (
+          page.label
+        ) : (
+          <Space>
+            <Tag color={METHOD_COLORS[page.method]}>{page.method.toUpperCase()}</Tag>
+            {page.label}
+          </Space>
+        )
       }
-      extra={<Typography.Text type="secondary" code>{page.apiEndpoint}</Typography.Text>}
+      extra={chat ? undefined : <Typography.Text type="secondary" code>{page.apiEndpoint}</Typography.Text>}
     >
       {page.description && <Typography.Paragraph type="secondary">{page.description}</Typography.Paragraph>}
-      <Form form={form} layout="vertical" onFinish={run} initialValues={schemaDefaults(page.body)} style={{ maxWidth: 800 }}>
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={run}
+        initialValues={schemaDefaults(page.body)}
+        disabled={done}
+        style={{ maxWidth: 800 }}
+      >
         {visibleParams.map((param) => (
           <ParamField key={`${param.in}:${param.name}`} param={param} />
         ))}
         {hasBodyFields && page.body && renderSchemaFields(page.body, { schemas, plugins })}
         <Space>
-          <Button type="primary" htmlType="submit" icon={<CaretRightOutlined />} loading={running} data-testid="agul-action-run">
-            {page.submitLabel ?? 'Run'}
+          <Button
+            type="primary"
+            htmlType="submit"
+            icon={done ? <CheckOutlined /> : chat ? undefined : <CaretRightOutlined />}
+            loading={running}
+            data-testid="agul-action-run"
+          >
+            {done ? 'Done' : (page.submitLabel ?? 'Run')}
           </Button>
           {running && (
-            <Button icon={<StopOutlined />} onClick={() => abortRef.current?.abort()}>
+            <Button icon={<StopOutlined />} onClick={() => abortRef.current?.abort()} disabled={false}>
               Stop
             </Button>
           )}
         </Space>
       </Form>
 
-      {(result || streamed !== null || error) && <Divider />}
-      {error && <Alert type="error" showIcon title="Request failed" description={error} />}
-      {streamed !== null && (
-        <Typography.Paragraph data-testid="agul-action-stream" style={{ whiteSpace: 'pre-wrap' }}>
-          {streamed}
-          {running && <span className="agul-caret">▍</span>}
-        </Typography.Paragraph>
-      )}
-      {result && (
-        <div data-testid="agul-action-result">
-          <Typography.Text type="secondary">HTTP {result.status}</Typography.Text>
-          <div style={{ marginTop: 8 }}>
-            <ResultView value={result.value} />
-          </div>
-        </div>
-      )}
+      <ActionResult
+        appearance={appearance}
+        running={running}
+        streamed={streamed}
+        error={error}
+        result={result}
+        renderResult={renderResult}
+      />
     </Card>
   );
 }

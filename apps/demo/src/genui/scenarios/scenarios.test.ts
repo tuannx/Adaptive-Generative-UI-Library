@@ -26,7 +26,7 @@ describe('generative UI scenarios', () => {
   it('skips the sick-day steps the user switched off', () => {
     const sickDay = scenarios.find((scenario) => scenario.id === 'sick-day')!;
     const rows = sickDay.respond({ soup: { include: false } }) as Array<Record<string, unknown>>;
-    expect(rows.find((row) => row.step === 'soup')).toMatchObject({ status: 'skipped', result: 'Skipped' });
+    expect(rows.find((row) => row.step === 'soup')).toMatchObject({ status: 'skipped', result: 'No soup ordered' });
     expect(rows).toHaveLength(6);
   });
 });

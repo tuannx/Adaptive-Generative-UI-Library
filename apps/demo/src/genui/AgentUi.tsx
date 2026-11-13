@@ -13,6 +13,9 @@ import {
 import type { GenUiScenario } from './scenarios/index.js';
 import { appStepPlugin, textareaPlugin } from './app-step-plugin.js';
 import { createMockFetch, type SentCall } from './mock-fetch.js';
+import { ResultReply } from './ResultReply.js';
+
+const renderReply = (value: unknown) => <ResultReply value={value} />;
 
 /** Components this host registers. The agent's message can only use these (plus AGUL's own fields). */
 const HOST_COMPONENTS = [appStepPlugin, textareaPlugin, choiceCardsPlugin];
@@ -37,7 +40,7 @@ export function AgentUi({ scenario, onSend }: { scenario: GenUiScenario; onSend:
     <MemoryRouter>
       <AgulRuntimeProvider value={runtime}>
         <PluginProvider plugins={HOST_COMPONENTS}>
-          <ActionView key={scenario.id} page={page} />
+          <ActionView key={scenario.id} page={page} appearance="chat" renderResult={renderReply} />
         </PluginProvider>
       </AgulRuntimeProvider>
     </MemoryRouter>
