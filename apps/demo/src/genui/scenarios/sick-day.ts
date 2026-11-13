@@ -91,10 +91,17 @@ Which of these should I do? Reply with the numbers, and tell me any changes.`,
   respond: (input) =>
     stepResults(input, {
       visit: (step) => `Video visit booked for ${s(step.slot)}`,
-      meetings: (step) => `${list(step.which)} meeting(s): ${s(step.to).toLowerCase()}`,
+      meetings: (step) => `${list(step.which)} meeting${list(step.which) === 1 ? "" : "s"}: ${s(step.to).toLowerCase()}`,
       team: (step) => `Posted in ${s(step.channel)}`,
       outOfOffice: (step) => `Out-of-office on until ${s(step.until)}`,
       pickup: () => 'Asked Alex about the 3:15 pickup',
       soup: (step) => `${s(step.soup)} soup ordered, ${s(step.when).toLowerCase()}`,
+    }, {
+      visit: 'No video visit booked',
+      meetings: 'Meetings left as they are',
+      team: 'Nothing posted to your team',
+      outOfOffice: 'Out-of-office left off',
+      pickup: 'Alex not asked about pickup',
+      soup: 'No soup ordered',
     }),
 };

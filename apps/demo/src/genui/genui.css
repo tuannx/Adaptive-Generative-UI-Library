@@ -17,3 +17,9 @@
 .genui-step__app { font-weight: 400; font-size: 12px; }
 .genui-note { margin: 16px 0; }
 .genui-json { margin: 0; max-height: 420px; overflow: auto; font-size: 12px; }
+.genui-reply { padding: 12px 14px; border-radius: 12px; background: #f5f5ff; }
+.genui-reply__lead { margin: 0 0 8px; font-weight: 500; }
+.genui-reply__list { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.genui-reply__list li { display: flex; gap: 8px; align-items: baseline; }
+.genui-reply__ok { color: #16a34a; }
+.genui-reply__skipped { color: #8c8c8c; }

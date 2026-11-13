@@ -24,7 +24,8 @@
     "swarm:next": "node scripts/swarm-next.mjs",
     "swarm:bootstrap": "node scripts/swarm-bootstrap.mjs",
     "clean": "rm -rf packages/*/dist apps/demo/dist apps/validate-consumer/dist node_modules/.cache",
-    "pages:build": "node scripts/build-pages.mjs"
+    "pages:build": "node scripts/build-pages.mjs",
+    "media:genui": "node scripts/capture-genui-media.mjs"
   },
   "devDependencies": {
     "@aikitstudio/agul-mcp": "0.1.0",

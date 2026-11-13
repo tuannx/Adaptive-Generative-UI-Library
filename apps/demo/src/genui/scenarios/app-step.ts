@@ -74,10 +74,14 @@ export function actionSpec(input: {
 }
 
 /** Rows for the result table: one per app, done or skipped. */
-export function stepResults(body: Record<string, unknown>, describe: Record<string, (step: Schema) => string>) {
+export function stepResults(
+  body: Record<string, unknown>,
+  describe: Record<string, (step: Schema) => string>,
+  skipped: Record<string, string> = {},
+) {
   return Object.entries(describe).map(([key, line]) => {
     const step = (body[key] ?? {}) as Schema;
     const included = step.include !== false;
-    return { step: key, result: included ? line(step) : 'Skipped', status: included ? 'done' : 'skipped' };
+    return { step: key, result: included ? line(step) : (skipped[key] ?? 'Skipped'), status: included ? 'done' : 'skipped' };
   });
 }

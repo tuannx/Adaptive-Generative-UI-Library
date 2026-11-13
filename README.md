@@ -26,6 +26,19 @@ npm run verify-pack  # npm pack + validate-consumer build
 npm run swarm:next   # pick next GitHub swarm task
 ```
 
+## Demo: an agent that answers with a screen
+
+One request, answered as text and as one AGUL view the user can edit and confirm. Everything is mocked.
+
+![Sick day: six app actions in one view](docs/media/genui-sick-day.png)
+
+![Confirming in chat mode: one plain-language reply, no HTTP details](docs/media/genui-sick-day.gif)
+
+![Dinner: free times, tables and rides as choice cards](docs/media/genui-dinner.png)
+
+Code and details: [`apps/demo/src/genui`](apps/demo/src/genui/README.md). Refresh the pictures with
+`npm run media:genui` (needs a Playwright Chromium and ffmpeg).
+
 ## Library Usage (Agent-friendly)
 
 ```tsx
